@@ -1,0 +1,558 @@
+package codetree;
+
+import codetree.common.*;
+import codetree.core.*;
+import codetree.edgeBased.DfsCode;
+import codetree.vertexBased.AcgmCode;
+import codetree.vertexBased.XAcgmCode;
+import java.io.*;
+import java.nio.file.*;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+
+class Main {
+    static Random rand;
+
+    private static String sdfFilename = "aido99sd.sdf";
+    private static String resultFilename;
+    private static String gfuFilename = new String();
+    private static String q_gfuFilename;
+    private static String dataset;
+    private static GraphCode graphCode;
+    private static int graphCodeID = 1;
+    private static int searchID = 1;
+    private static int datasetID = 0;
+    private static int datasetSize = 0;
+
+    public static void main(String[] args) throws InterruptedException {
+        if (searchID < 1 && searchID > 2) {
+            System.out.println("無効なグラフコードです。");
+            System.exit(0);
+        }
+
+        long max = Runtime.getRuntime().maxMemory();
+
+        System.out.println("max: " + max / 1024 / 1024 / 1024);
+        String allindex = String.format("result/all_index.csv", dataset);
+        Path writeindex = Paths.get(allindex);
+        try (BufferedWriter allfind = Files.newBufferedWriter(writeindex)) {
+            allfind.write(
+                    "dataset,depth,addPathtoTree(ms),Tree_size,Tree_size(new),remove_time(ms),addIDtoTree(ms),Build_tree(ms)\n");
+
+            for (datasetID = 0; datasetID <= 0; datasetID++) {
+
+                if (datasetID < 0 || datasetID > 6) {
+                    System.out.println("無効なデータセットIDです");
+                    System.exit(0);
+                }
+
+                parseArgs(args);
+
+                if (searchID == 1) {
+
+                    System.out.println("部分グラフ検索を開始します");
+
+                    List<Graph> G = new ArrayList<Graph>();
+                    List<ArrayList<Pair<Integer, Graph>>> Q = new ArrayList<>();
+                    final int querysize = 100;
+                    final int minedge = 4;
+                    final int maxedge = 64;
+
+                    for (int i = 0; i < datasetSize; i++) {
+                        String filename = String.format("%s/g%d.gfu", dataset, i);
+                        Graph g = SdfFileReader.readFileQuery_gfu(Paths.get(filename));
+                        G.add(g);
+                    }
+
+                    for (int numOfEdge = minedge; numOfEdge <= maxedge; numOfEdge *= 2) {
+                        ArrayList<Pair<Integer, Graph>> qset = new ArrayList<>();
+                        for (int i = 0; i < querysize; i++) {
+                            q_gfuFilename = String.format("Query/%s/randomwalk/%d/q%d.gfu", dataset,
+                                    numOfEdge, i);
+                            Graph q = SdfFileReader.readFileQuery_gfu(Paths.get(q_gfuFilename));
+                            qset.add(new Pair<Integer, Graph>(i, q));
+                        }
+                        // query_search(qset, numOfEdge, "R");
+                        Q.add(qset);
+                    }
+
+                    for (int numOfEdge = minedge; numOfEdge <= maxedge; numOfEdge *= 2) {
+                        ArrayList<Pair<Integer, Graph>> qset = new ArrayList<>();
+                        for (int i = 0; i < querysize; i++) {
+                            q_gfuFilename = String.format("Query/%s/bfs/%d/q%d.gfu", dataset, numOfEdge,
+                                    i);
+                            Graph q = SdfFileReader.readFileQuery_gfu(Paths.get(q_gfuFilename));
+                            qset.add(new Pair<Integer, Graph>(i, q));
+                        }
+                        // query_search(qset, numOfEdge, "B");
+                        Q.add(qset);
+                    }
+
+                    // print_q(Q);
+                    // print_g(G);
+
+                    System.out.println("G size: " + G.size());
+
+                    System.out.println("Q size: " + Q.size() * querysize);
+
+                    String output = String.format("result/%s_output.txt", dataset);
+                    Path out = Paths.get(output);
+
+                    String allresult = String.format("result/%s_result.csv",
+                            dataset);
+                    Path all = Paths.get(allresult);
+
+                    try (BufferedWriter bw2 = Files.newBufferedWriter(out);
+                            BufferedWriter allbw = Files.newBufferedWriter(all);) {
+                        allbw.write(
+                                "dataset,query_set,FP_ratio,(G-C)/(G-A),SP,filtering_time(ms),verification_time(ms),query_time(ms),codetree_filtime/fil_num,codetree_fil_num,allfil_num/allfil_time,allfil_num,nonfail\n");
+
+                        System.out.println(" ");
+                        resultFilename = String.format("result/%s_result.txt",
+                                dataset);
+
+                        Path res = Paths.get(resultFilename);
+                        try (BufferedWriter bw = Files.newBufferedWriter(res)) {
+                            long start = System.nanoTime();
+
+                            CodeTree tree = new CodeTree(graphCode, G, bw, dataset, allfind);
+
+                            bw.write("Build tree(ms): "
+                                    + String.format("%.6f", (double) (System.nanoTime() - start) / 1000 / 1000) +
+                                    "\n");
+                            allfind.write(","
+                                    + String.format("%.6f", (double) (System.nanoTime() - start) / 1000 / 1000)
+                                    + ",");
+
+                            // CodeTree tree2 = null;
+                            // try {
+                            // String codetree = String.format("data_structure/%s_data_structure.ser",
+                            // dataset);
+                            // FileInputStream fileIn = new FileInputStream(codetree);
+                            // ObjectInputStream in = new ObjectInputStream(fileIn);
+                            // tree2 = (CodeTree) in.readObject();
+                            // in.close();
+                            // fileIn.close();
+                            // System.out.println("ファイルからデータ構造がデシリアライズされました。");
+                            // } catch (IOException e) {
+                            // e.printStackTrace();
+                            // } catch (ClassNotFoundException e) {
+                            // e.printStackTrace();
+                            // }
+
+                            G = null;
+
+                            // if (true)
+                            // continue;
+
+                            int index = minedge;
+                            String mode = null;
+                            String data_out = null;
+
+                            for (ArrayList<Pair<Integer, Graph>> Q_set : Q) {
+
+                                // if (index > 4) {
+                                // break;
+                                // }
+
+                                // if ((datasetID == 3 && index >= 32) || (datasetID == 6 && index >= 16)
+                                // || index >= 128) {
+                                // index *= 2;
+                                // continue;
+                                // }
+
+                                if (index <= maxedge) {
+                                    System.out.println("\nQ" + index + "R");
+                                    bw.write("Q" + index + "R\n");
+                                    bw2.write("Q" + index + "R\n");
+                                    allbw.write(dataset + ",Q" + index + "R,");
+                                    data_out = String.format("result/%s_%dR_data.csv", dataset,
+                                            index);
+                                    mode = "randomwalk";
+                                } else {
+                                    System.out.println("\nQ" + index / 32 + "B");
+                                    bw.write("Q" + index / 32 + "B\n");
+                                    bw2.write("Q" + index / 32 + "B\n");
+                                    allbw.write(dataset + ",Q" + index / 32 + "B,");
+                                    data_out = String.format("result/%s_%dB_data.csv", dataset,
+                                            index / 32);
+                                    mode = "bfs";
+                                }
+
+                                try (BufferedWriter bwout = new BufferedWriter(
+                                        new OutputStreamWriter(new FileOutputStream(data_out), "UTF-8"));) {
+
+                                    start = System.nanoTime();
+
+                                    for (Pair<Integer, Graph> q : Q_set) {
+                                        if (q.left == 0) {
+                                            System.out.print("");
+                                        } else if (q.left % 50 == 0) {
+                                            System.out.print("*");
+                                        } else if (q.left % 10 == 0) {
+                                            System.out.print(".");
+                                        }
+                                        BitSet result = tree.subgraphSearch(q.right, bw, datasetSize, mode,
+                                                dataset,
+                                                bwout, allbw);
+
+                                        bw2.write(
+                                                q.left.toString() + " " + result.cardinality() + "個"
+                                                        + result.toString()
+                                                        + "\n");
+                                    }
+                                    final long time = System.nanoTime() - start;
+                                    bw.write("(A)*100+(C)+(D)+(E)+(α) 合計処理時間(ms): " + (time / 1000 / 1000) +
+                                            "\n");
+                                    index *= 2;
+                                    Q_set = null;
+                                }
+                                bw.write("*********************************\n");
+                            }
+                        }
+                    } catch (IOException e) {
+                        System.out.println(e);
+                    }
+
+                } else if (searchID == 2) {
+                    datasetID = 0;
+                    System.out.println("スーパーグラフ検索を開始します");
+
+                    List<Graph> G = new ArrayList<Graph>();
+
+                    for (int i = 0; i < datasetSize; i++) {
+                        String filename = String.format("%s/g%d.gfu", dataset, i);
+                        Graph g = SdfFileReader.readFileQuery_gfu(Paths.get(filename));
+                        G.add(g);
+                    }
+
+                    // List<Graph> G = SdfFileReader.readFile(Paths.get(sdfFilename));
+
+                    ArrayList<Pair<Integer, Graph>> Q = new ArrayList<>();
+                    for (int i = 0; i < G.size(); ++i) {
+                        Graph g = G.get(i);
+
+                        final int size = g.size();
+
+                        if (34 <= size && size <= 36 && g.isConnected()) {
+                            Q.add(new Pair<Integer, Graph>(i, g));
+                        }
+                    }
+
+                    System.out.println("G size: " + G.size());
+                    System.out.println("Q size: " + Q.size());
+
+                    long start = System.nanoTime();
+                    CodeTree tree = new CodeTree(graphCode, G, 100);// コード木構築
+                    System.out.println("Build tree: " + (System.nanoTime() - start) / 1000 / 1000
+                            + "msec");
+
+                    G = null;
+
+                    Path out = Paths.get("output_supergraph.txt");
+                    try (BufferedWriter bw = Files.newBufferedWriter(out)) {
+                        start = System.nanoTime();
+
+                        for (Pair<Integer, Graph> q : Q) {
+                            List<Integer> result = tree.supergraphSearch(q.right);
+                            bw.write(q.left.toString() + result.toString() + "\n");
+                        }
+
+                        final long time = System.nanoTime() - start;
+                        System.out.println((time) + " nano sec");
+                        System.out.println((time / 1000 / 1000) + " msec");
+                    } catch (IOException e) {
+                        System.exit(1);
+                    }
+                }
+            }
+        } catch (IOException e) {
+            System.out.println(e);
+            System.exit(1);
+        }
+
+    }
+
+    private static void parseArgs(String[] args) {
+        for (int i = 0; i < args.length; ++i) {
+            if (args[i].equals("-code")) {
+                if (args[++i].equals("acgm"))
+                    graphCode = new AcgmCode();
+                else if (args[i].equals("xacgm"))
+                    graphCode = new XAcgmCode();
+                else if (args[i].equals("dfs"))
+                    graphCode = new DfsCode();
+                else {
+                    System.err.println("無効なグラフコード: " + args[i]);
+                    System.exit(1);
+                }
+            } else if (sdfFilename == null) {
+                sdfFilename = args[i];
+            } else {
+                System.err.println("無効な引数: " + args[i]);
+                System.exit(1);
+            }
+        }
+
+        if (searchID == 1)
+            graphCodeID = 1;
+
+        if (graphCodeID == 1) {
+            graphCode = new AcgmCode();
+            System.out.println("AcGMコードで動作します");
+        } else if (graphCodeID == 2) {
+            graphCode = new XAcgmCode();
+            System.out.println("XAcGMコードで動作します");
+        } else {
+            graphCode = new DfsCode();
+            System.out.println("Dfsコードで動作します");
+        }
+
+        if (datasetID == 1) {
+            gfuFilename = "pdbs.gfu";
+            resultFilename = "PDBS_result.txt";
+            dataset = "pdbs";
+            datasetSize = 600;
+            System.out.println("PDBS");
+        } else if (datasetID == 2) {
+            gfuFilename = "pcms.gfu";
+            resultFilename = "PCM_result.txt";
+            dataset = "pcms";
+            datasetSize = 200;
+            System.out.println("PCM");
+        } else if (datasetID == 3) {
+            gfuFilename = "ppigo.gfu";
+            resultFilename = "PPI_result.txt";
+            dataset = "ppigo";
+            datasetSize = 20;
+            System.out.println("PPI");
+        } else if (datasetID == 4) {
+            gfuFilename = "IMDB-MULTI.gfu";
+            resultFilename = "IMDB_result.txt";
+            dataset = "IMDB-MULTI";
+            datasetSize = 1500;
+            System.out.println("IMDB");
+        } else if (datasetID == 5) {
+            gfuFilename = "REDDIT-MULTI-5K.gfu";
+            resultFilename = "REDDIT_result.txt";
+            dataset = "REDDIT-MULTI-5K";
+            datasetSize = 4999;
+            System.out.println("REDDIT");
+        } else if (datasetID == 6) {
+            gfuFilename = "COLLAB.gfu";
+            resultFilename = "COLLAB_result.txt";
+            dataset = "COLLAB";
+            datasetSize = 5000;
+            System.out.println("COLLAB");
+        } else if (datasetID == 0) {
+            gfuFilename = "AIDS.gfu";
+            resultFilename = "AIDS_result.txt";
+            dataset = "AIDS";
+            datasetSize = 40000;
+            System.out.println("AIDS");
+        }
+    }
+
+    // String datasetPath = String.format("datasets/%s.ser", dataset);
+    // File file = new File(datasetPath);
+    // if (file.exists()) { // ファイルが存在しない場合
+    // try {
+    // FileInputStream fileIn = new FileInputStream(datasetPath);
+    // ObjectInputStream in = new ObjectInputStream(fileIn);
+    // G = (List<Graph>) in.readObject();
+    // in.close();
+    // fileIn.close();
+    // System.out.println("ファイルからデータ構造がデシリアライズされました。");
+    // } catch (ClassNotFoundException e) {
+    // e.printStackTrace();
+    // System.exit(1);
+    // }
+    // } else {
+    // for (int i = 0; i < datasetSize; i++) {
+    // String filename = String.format("%s/g%d.gfu", dataset, i);
+    // Graph g = SdfFileReader.readFileQuery_gfu(Paths.get(filename));
+    // G.add(g);
+    // }
+    // try {
+    // FileOutputStream fileOut = new FileOutputStream(datasetPath);
+    // ObjectOutputStream objout = new ObjectOutputStream(fileOut);
+    // objout.writeObject(G);
+    // objout.close();
+    // fileOut.close();
+    // System.out.println("データセットがシリアライズされ、ファイルに保存されました。");
+    // } catch (IOException e) {
+    // e.printStackTrace();
+    // }
+    // }
+
+    // dataset_search(G);
+    // VertexLabel.orderLabel(G);
+
+    private static void query_search(ArrayList<Pair<Integer, Graph>> Q, int numOfEdge, String mode) {
+
+        double V = 0;
+        double e = 0;
+        double sigma = 0;
+
+        for (Pair<Integer, Graph> q : Q) {
+            Graph g = q.right;
+            V += g.order();
+            e += g.size();
+            sigma += g.labels();
+        }
+        // System.out.println("Q_" + numOfEdge + mode + " |V| per q " + V / Q.size());
+        // System.out.println("Q_" + numOfEdge + mode + " |E| per q " + e / Q.size());
+        System.out.println("Q_" + numOfEdge + mode + " d per q " + String.format("%.2f", e * 2 / V));
+        // System.out.println("Q_" + numOfEdge + mode + " |Σ| per q " + sigma /
+        // Q.size());
+        System.out.println();
+    }
+
+    private static void dataset_search(List<Graph> G) {
+
+        double V = 0;
+        double e = 0;
+        double sigma = 0;
+        double d = 0;
+
+        for (int i = 0; i < G.size(); i++) {
+            Graph g = G.get(i);
+            V += g.order();
+            e += g.size();
+            d += g.degree();
+            sigma += g.labels();
+        }
+        System.out.println("|G| " + G.size());
+        System.out.println("labels " + Graph.numOflabels(G));
+        System.out.println("|V| per g " + V / G.size());
+        System.out.println("|E| per g " + e / G.size());
+        System.out.println(" d per g " + String.format("%.2f", d / G.size()));
+        System.out.println("|Σ| per g " + sigma / G.size());
+        System.out.println("最大頂点数 " + Graph.max_vertice(G));
+        System.out.println("最大辺数 " + Graph.max_size(G));
+        System.out.println();
+    }
+
+    private static void print_q(List<ArrayList<Pair<Integer, Graph>>> Q) {
+        Path out = Paths.get("queryput.txt");
+        int index = 8;
+        try (BufferedWriter bw = Files.newBufferedWriter(out)) {
+            for (ArrayList<Pair<Integer, Graph>> Q_set : Q) {
+                if (index <= 32)
+                    bw.write("Q_" + index + "R\n");
+                else
+                    bw.write("Q_" + index / 16 + "B\n");
+                // bw.write("*\n");
+                for (Pair<Integer, Graph> q : Q_set) {
+                    bw.write(q.left + "\n");
+                    for (int i = 0; i < q.right.vertices.length; i++) {
+                        bw.write(q.right.vertices[i] + " ");
+                    }
+                    bw.write("\n");
+                    for (int i = 0; i < q.right.vertices.length; i++) {
+                        for (int j = 0; j < q.right.vertices.length; j++) {
+                            bw.write(q.right.edges[i][j] + " ");
+                        }
+                        bw.write("\n");
+                    }
+                }
+                index *= 2;
+            }
+        } catch (IOException e) {
+            System.exit(1);
+        }
+    }
+
+    private static void print_g(List<Graph> G) {
+        Path out = null;
+        out = Paths.get("Gput.txt");
+
+        int id = 0;
+
+        try (BufferedWriter bw = Files.newBufferedWriter(out)) {
+            for (Graph g : G) {
+                bw.write(id + "\n");
+                for (int i = 0; i < g.vertices.length; i++) {
+                    bw.write(g.vertices[i] + " ");
+                }
+                bw.write("\n");
+                for (int i = 0; i < g.vertices.length; i++) {
+                    for (int j = 0; j < g.vertices.length; j++) {
+                        bw.write(g.edges[i][j] + " ");
+                    }
+                    bw.write("\n");
+                }
+                id++;
+            }
+        } catch (IOException e) {
+            System.exit(1);
+        }
+    }
+
+    private static ArrayList<Pair<Integer, Graph>> setQuery_RandomWalk(List<Graph> G, int querysize, int numOfEdge) {
+        ArrayList<Pair<Integer, Graph>> Q = new ArrayList<>(querysize);
+        int count = 0;
+        double V = 0;
+        double e = 0;
+        double sigma = 0;
+        rand = new Random(1);
+
+        while (count < querysize) {
+            Graph g;
+            while (true) {
+                int random = rand.nextInt(G.size());
+                g = G.get(random);
+                if (g.size() >= numOfEdge && g.isConnected())
+                    break;
+            }
+            Graph q = g.set_ramQ(numOfEdge);
+            V += q.order();
+            e += q.size();
+            sigma += q.labels();
+            Q.add(new Pair<Integer, Graph>(count, q));
+            count++;
+        }
+        // System.out.println("Q_"+ numOfEdge + "S |V| per q " + V/querysize );
+        // System.out.println("Q_"+ numOfEdge +"S |E| per q " + e/querysize );
+        // System.out.println("Q_"+ numOfEdge +"S d per q " +
+        // String.format("%.2f",e*2/V));
+        // System.out.println("Q_"+ numOfEdge +"S |Σ| per q " + sigma/querysize );
+        // System.out.println();
+        return Q;
+    }
+
+    private static ArrayList<Pair<Integer, Graph>> setQuery_BFWalk(List<Graph> G, int querysize, int numOfEdge) {
+        ArrayList<Pair<Integer, Graph>> Q = new ArrayList<>(querysize);
+        int count = 0;
+        double V = 0;
+        double e = 0;
+        double sigma = 0;
+        rand = new Random(2);
+
+        while (count < querysize) {
+            Graph g;
+            Graph q;
+            while (true) {
+                int random = rand.nextInt(G.size());
+                g = G.get(random);
+                if (g.size() >= numOfEdge && g.isConnected()) {
+                    q = Graph.createQueryByBFS(g, numOfEdge);
+                    break;
+                }
+            }
+            // Graph q = g.set_BFS(numOfEdge);
+            V += q.order();
+            e += q.size();
+            sigma += q.labels();
+            Q.add(new Pair<Integer, Graph>(count, q));
+            count++;
+        }
+        // System.out.println("Q_"+ numOfEdge + "D |V| per q " + V/querysize );
+        // System.out.println("Q_" + numOfEdge + "D |E| per q " + e / querysize);
+        // System.out.println("Q_"+ numOfEdge +"D d per q " +
+        // String.format("%.2f",e*2/V));
+        // System.out.println("Q_"+ numOfEdge +"D |Σ| per q " + sigma/querysize );
+        // System.out.println();
+        return Q;
+    }
+}

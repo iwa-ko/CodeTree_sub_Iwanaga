@@ -1,0 +1,176 @@
+limDepth3
+Tree size(original): 1674
+addPathtoTree(ms): 112.249236
+Tree size(new): 686
+addIDtoTree(ms): 59684.056893
+Build tree(ms): 59804.254223
+Q4R
+(C)書き込み関数時間(ms): 25510.34
+(D)プロセス関数時間(ms): 63650.70
+(E)読み込み関数時間(ms): 31.04
+Number of Candidate Graphs: 201373
+Number of Answer Graphs: 112025
+filtering Presison : 0.77727
+FP ratio : 0.44178
+inclusion Presison : 0.00000%
+filter_time/filter_num : 0.004463
+(a)a VEQs Filtering Time (ms): 17.282440
+(b)a VEQs Verification Time (ms): 1.947263
+(A)a Filtering Time (ms): 0.028180
+(B=a+b)a Verification Time (ms): 19.229703
+(A)+(B)a Processing Time (ms): 19.257883
+(A)*100+(C)+(D)+(E)+(α) 合計処理時間(ms): 89175
+*********************************
+Q8R
+(C)書き込み関数時間(ms): 18948.96
+(D)プロセス関数時間(ms): 47870.59
+(E)読み込み関数時間(ms): 10.40
+Number of Candidate Graphs: 123253
+Number of Answer Graphs: 24186
+filtering Presison : 0.79307
+FP ratio : 0.81243
+inclusion Presison : 0.00000%
+filter_time/filter_num : 0.002254
+(a)a VEQs Filtering Time (ms): 10.672565
+(b)a VEQs Verification Time (ms): 1.755230
+(A)a Filtering Time (ms): 0.046079
+(B=a+b)a Verification Time (ms): 12.427796
+(A)+(B)a Processing Time (ms): 12.473875
+(A)*100+(C)+(D)+(E)+(α) 合計処理時間(ms): 66831
+*********************************
+Q16R
+(C)書き込み関数時間(ms): 14155.77
+(D)プロセス関数時間(ms): 36328.93
+(E)読み込み関数時間(ms): 5.16
+Number of Candidate Graphs: 78753
+Number of Answer Graphs: 6556
+filtering Presison : 0.85367
+FP ratio : 0.93052
+inclusion Presison : 0.00000%
+filter_time/filter_num : 0.001442
+(a)a VEQs Filtering Time (ms): 7.037199
+(b)a VEQs Verification Time (ms): 1.778733
+(A)a Filtering Time (ms): 0.076436
+(B=a+b)a Verification Time (ms): 8.815932
+(A)+(B)a Processing Time (ms): 8.892369
+(A)*100+(C)+(D)+(E)+(α) 合計処理時間(ms): 50498
+*********************************
+Q32R
+(C)書き込み関数時間(ms): 10166.46
+(D)プロセス関数時間(ms): 26867.80
+(E)読み込み関数時間(ms): 3.80
+Number of Candidate Graphs: 48459
+Number of Answer Graphs: 1703
+filtering Presison : 0.90609
+FP ratio : 0.97214
+inclusion Presison : 0.00000%
+filter_time/filter_num : 0.000981
+(a)a VEQs Filtering Time (ms): 4.742441
+(b)a VEQs Verification Time (ms): 2.146124
+(A)a Filtering Time (ms): 0.144506
+(B=a+b)a Verification Time (ms): 6.888565
+(A)+(B)a Processing Time (ms): 7.033071
+(A)*100+(C)+(D)+(E)+(α) 合計処理時間(ms): 37054
+*********************************
+Q64R
+(C)書き込み関数時間(ms): 7093.15
+(D)プロセス関数時間(ms): 20052.41
+(E)読み込み関数時間(ms): 3.39
+Number of Candidate Graphs: 29089
+Number of Answer Graphs: 193
+filtering Presison : 0.94217
+FP ratio : 0.99361
+inclusion Presison : 0.00000%
+filter_time/filter_num : 0.000767
+(a)a VEQs Filtering Time (ms): 3.512161
+(b)a VEQs Verification Time (ms): 3.324575
+(A)a Filtering Time (ms): 0.318802
+(B=a+b)a Verification Time (ms): 6.836735
+(A)+(B)a Processing Time (ms): 7.155538
+(A)*100+(C)+(D)+(E)+(α) 合計処理時間(ms): 27183
+*********************************
+Q4B
+(C)書き込み関数時間(ms): 25323.21
+(D)プロセス関数時間(ms): 63224.07
+(E)読み込み関数時間(ms): 36.72
+Number of Candidate Graphs: 202343
+Number of Answer Graphs: 131631
+filtering Presison : 0.81367
+FP ratio : 0.34726
+inclusion Presison : 0.00000%
+filter_time/filter_num : 0.004764
+(a)a VEQs Filtering Time (ms): 17.517060
+(b)a VEQs Verification Time (ms): 2.257346
+(A)a Filtering Time (ms): 0.027568
+(B=a+b)a Verification Time (ms): 19.774406
+(A)+(B)a Processing Time (ms): 19.801974
+(A)*100+(C)+(D)+(E)+(α) 合計処理時間(ms): 88562
+*********************************
+Q8B
+(C)書き込み関数時間(ms): 19203.18
+(D)プロセス関数時間(ms): 48823.33
+(E)読み込み関数時間(ms): 17.96
+Number of Candidate Graphs: 133555
+Number of Answer Graphs: 55190
+filtering Presison : 0.82605
+FP ratio : 0.59881
+inclusion Presison : 0.00000%
+filter_time/filter_num : 0.003087
+(a)a VEQs Filtering Time (ms): 13.684445
+(b)a VEQs Verification Time (ms): 3.108112
+(A)a Filtering Time (ms): 0.045169
+(B=a+b)a Verification Time (ms): 16.792557
+(A)+(B)a Processing Time (ms): 16.837726
+(A)*100+(C)+(D)+(E)+(α) 合計処理時間(ms): 68039
+*********************************
+Q16B
+(C)書き込み関数時間(ms): 14267.97
+(D)プロセス関数時間(ms): 37008.98
+(E)読み込み関数時間(ms): 9.27
+Number of Candidate Graphs: 88076
+Number of Answer Graphs: 21455
+filtering Presison : 0.86089
+FP ratio : 0.79492
+inclusion Presison : 0.00000%
+filter_time/filter_num : 0.002097
+(a)a VEQs Filtering Time (ms): 9.953680
+(b)a VEQs Verification Time (ms): 3.037922
+(A)a Filtering Time (ms): 0.078114
+(B=a+b)a Verification Time (ms): 12.991602
+(A)+(B)a Processing Time (ms): 13.069715
+(A)*100+(C)+(D)+(E)+(α) 合計処理時間(ms): 51291
+*********************************
+Q32B
+(C)書き込み関数時間(ms): 10828.46
+(D)プロセス関数時間(ms): 28889.76
+(E)読み込み関数時間(ms): 7.34
+Number of Candidate Graphs: 61935
+Number of Answer Graphs: 14418
+filtering Presison : 0.90142
+FP ratio : 0.84384
+inclusion Presison : 0.00000%
+filter_time/filter_num : 0.001863
+(a)a VEQs Filtering Time (ms): 8.883527
+(b)a VEQs Verification Time (ms): 3.732177
+(A)a Filtering Time (ms): 0.161628
+(B=a+b)a Verification Time (ms): 12.615705
+(A)+(B)a Processing Time (ms): 12.777333
+(A)*100+(C)+(D)+(E)+(α) 合計処理時間(ms): 39741
+*********************************
+Q64B
+(C)書き込み関数時間(ms): 9730.41
+(D)プロセス関数時間(ms): 27389.40
+(E)読み込み関数時間(ms): 6.83
+Number of Candidate Graphs: 56154
+Number of Answer Graphs: 11618
+filtering Presison : 0.90787
+FP ratio : 0.86588
+inclusion Presison : 0.00000%
+filter_time/filter_num : 0.002196
+(a)a VEQs Filtering Time (ms): 10.246489
+(b)a VEQs Verification Time (ms): 5.587514
+(A)a Filtering Time (ms): 0.475076
+(B=a+b)a Verification Time (ms): 15.834003
+(A)+(B)a Processing Time (ms): 16.309080
+(A)*100+(C)+(D)+(E)+(α) 合計処理時間(ms): 37173
+*********************************
