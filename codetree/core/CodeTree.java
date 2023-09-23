@@ -17,7 +17,7 @@ public class CodeTree implements Serializable {
         int limDepth = 0;
         datasetSize = G.size();// test
         this.impl = impl;
-        this.root = new IndexNode(null, null);
+        this.root = new IndexNode(null, null, datasetSize);
         Random rand = new Random(2);
 
         List<CodeFragment> code = new ArrayList<>();
@@ -26,7 +26,7 @@ public class CodeTree implements Serializable {
 
         List<ArrayList<CodeFragment>> codelist = impl.computeCanonicalCode(Graph.numOflabels(G));
         for (ArrayList<CodeFragment> c : codelist) {
-            root.addPath(c, -1, false);
+            root.addPath(c, -1, false, datasetSize);
         }
 
         switch (dataset) {
@@ -67,7 +67,7 @@ public class CodeTree implements Serializable {
             for (int i = 0; i < loop; i++) {
                 int start_vertice = rand.nextInt(g.order);
                 code = impl.computeCanonicalCode(g, start_vertice, limDepth);
-                root.addPath(code, g.id, false);
+                root.addPath(code, g.id, false, datasetSize);
             }
         }
 
@@ -132,33 +132,33 @@ public class CodeTree implements Serializable {
     }
 
     // private void shirinkNEC(List<Graph> G) {
-    //     int before = 0;
-    //     int necNUM = 0;
-    //     long shrinkTime = 0;
-    //     long start = System.nanoTime();
+    // int before = 0;
+    // int necNUM = 0;
+    // long shrinkTime = 0;
+    // long start = System.nanoTime();
 
-    //     for (Graph g : G) {
-    //         before = g.order;
-    //         Graph g2 = g.shirinkNEC();
-    //         G.set(g.id, g2);
-    //         necNUM += before - g2.order;
-    //     }
-    //     shrinkTime = System.nanoTime() - start;
+    // for (Graph g : G) {
+    // before = g.order;
+    // Graph g2 = g.shirinkNEC();
+    // G.set(g.id, g2);
+    // necNUM += before - g2.order;
+    // }
+    // shrinkTime = System.nanoTime() - start;
 
-    //     System.out.println("削減頂点数:" + necNUM);
-    //     System.out.println("削減関数時間[ms]" + shrinkTime / 1000 / 1000);
+    // System.out.println("削減頂点数:" + necNUM);
+    // System.out.println("削減関数時間[ms]" + shrinkTime / 1000 / 1000);
     // }
 
     public CodeTree(GraphCode impl, List<Graph> G, int b) {
         this.impl = impl;
-        this.root = new IndexNode(null, null);
+        this.root = new IndexNode(null, null, 0);
 
         System.out.print("Indexing");
         for (int i = 0; i < G.size(); ++i) {
             Graph g = G.get(i);
 
             List<CodeFragment> code = impl.computeCanonicalCode(g, b);// 準正準コードを得る
-            root.addPath(code, i, true);
+            root.addPath(code, i, true, 0);
 
             if (i % 100000 == 0) {
                 System.out.println();

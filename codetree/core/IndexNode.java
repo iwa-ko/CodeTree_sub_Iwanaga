@@ -20,6 +20,7 @@ public class IndexNode implements Serializable {
     protected int nodeID;
 
     protected int traverse_num = 0;
+    protected int[] g_traverse_num;
 
     static BitSet Ex;
     static BitSet In = new BitSet();
@@ -66,7 +67,7 @@ public class IndexNode implements Serializable {
     static long a_filterTime = 0;
     static ArrayList<IndexNode> removeNode = new ArrayList<>();
 
-    IndexNode(IndexNode parent, CodeFragment frag) {
+    IndexNode(IndexNode parent, CodeFragment frag, int G_size) {
         this.parent = parent;
         this.frag = frag;
 
@@ -80,6 +81,7 @@ public class IndexNode implements Serializable {
         nodeID = 0;
         adjLabels = new HashSet<>();
         traverse_num = 0;
+        g_traverse_num = new int[G_size];
     }
 
     List<Integer> sizeOnDepth() {
@@ -115,15 +117,20 @@ public class IndexNode implements Serializable {
     static int c = 0;
     static int query_per_c = 0;
 
-    void find_once_node() {
+    void find_once_node(int size) {
         // System.out.println(this.nodeID + ":" + traverse_num);
 
         if (traverse_num == 1) {
-            c++;
+            for (int i = 0; i < size; i++) {
+                if (g_traverse_num[i] == 1 && Can.get(i)) {
+                    c++;
+                }
+            }
+            // c++;
             // System.out.println(this);
         }
         for (IndexNode m : children) {
-            m.find_once_node();
+            m.find_once_node(size);
         }
     }
 
@@ -183,7 +190,7 @@ public class IndexNode implements Serializable {
         return code;
     }
 
-    void addPath(List<CodeFragment> code, int graphIndex, boolean supergraphSearch) {
+    void addPath(List<CodeFragment> code, int graphIndex, boolean supergraphSearch, int G_size) {
         final int height = code.size();
 
         if (this.nodeID == 0) {
@@ -217,17 +224,17 @@ public class IndexNode implements Serializable {
 
         for (IndexNode m : children) {
             if (m.frag.equals(car)) {
-                m.addPath(cdr, graphIndex, supergraphSearch);
+                m.addPath(cdr, graphIndex, supergraphSearch, G_size);
                 return;
             }
         }
 
-        IndexNode m = new IndexNode(this, car);
+        IndexNode m = new IndexNode(this, car, G_size);
         if (supergraphSearch)
             m.supNode = true;
         children.add(m);
 
-        m.addPath(cdr, graphIndex, supergraphSearch);
+        m.addPath(cdr, graphIndex, supergraphSearch, G_size);
     }
 
     List<Integer> search(Graph q, GraphCode impl) {
@@ -305,7 +312,7 @@ public class IndexNode implements Serializable {
         write_file_indiv(q, bw_data, size);
 
         c = 0;
-        find_once_node();
+        find_once_node(size);
         query_per_c += c;
         // System.out.println(q.id + ":" + c);
 
@@ -360,26 +367,23 @@ public class IndexNode implements Serializable {
     void addIDtoTree(Graph g, GraphCode impl, int id) {
         List<Pair<IndexNode, SearchInfo>> infoList = impl.beginSearch_sub(g, this);
         for (Pair<IndexNode, SearchInfo> info : infoList) {
-            // ここで次数１の場合に同じ頂点ラベルあり、探索スキップ
             info.left.addIDtoTree(g, info.right, impl, id);
         }
     }
 
-    static int pastV = 0;
+    // static int pastV = 0;
 
     private void addIDtoTree(Graph g, SearchInfo info, GraphCode impl, int id) {
         matchGraphIndicesBitSet.set(id, true);
-        if (info.getClose().cardinality() != depth) {
-            System.out.println(info.getClose().cardinality() + "," + depth);
-        }
+        g_traverse_num[id]++;
 
         if (children.size() == 0) {
             return;
         }
 
-        if (backtrackJudge(g, id)) {
-            return;
-        }
+        // if (backtrackJudge(g, id)) {
+        // return;
+        // }
 
         for (int v = 0; v < g.order; v++) {
             if (!info.getOpen().get(v))
