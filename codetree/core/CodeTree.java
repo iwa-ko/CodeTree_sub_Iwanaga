@@ -10,6 +10,7 @@ public class CodeTree implements Serializable {
     GraphCode impl;
     public IndexNode root;
     public static int datasetSize;
+    Random rand;
 
     public CodeTree(GraphCode impl, List<Graph> G, BufferedWriter bw, String dataset,
             BufferedWriter index) throws IOException {
@@ -18,7 +19,7 @@ public class CodeTree implements Serializable {
         datasetSize = G.size();// test
         this.impl = impl;
         this.root = new IndexNode(null, null, datasetSize);
-        Random rand = new Random(2);
+        rand = new Random(2);
 
         List<CodeFragment> code = new ArrayList<>();
 
@@ -56,6 +57,7 @@ public class CodeTree implements Serializable {
 
             case "ppigo":
                 limDepth = 7;
+                // rand = new Random(1);
                 break;
         }
 

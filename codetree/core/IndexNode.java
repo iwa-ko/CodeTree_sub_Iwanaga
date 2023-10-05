@@ -21,6 +21,8 @@ public class IndexNode implements Serializable {
 
     protected int traverse_num = 0;
     protected int[] g_traverse_num;
+    // protected HashMap<Integer, ArrayList<int[]>> mapping;
+    protected HashMap<Integer, int[]> mapping;
 
     static BitSet Ex;
     static BitSet In = new BitSet();
@@ -82,28 +84,7 @@ public class IndexNode implements Serializable {
         adjLabels = new HashSet<>();
         traverse_num = 0;
         g_traverse_num = new int[G_size];
-    }
-
-    List<Integer> sizeOnDepth() {
-        ArrayList<Integer> sizeList = new ArrayList<>();
-        sizeList.add(children.size());
-
-        ArrayList<IndexNode> nodeList1;
-        ArrayList<IndexNode> nodeList2 = new ArrayList<>();
-        nodeList2.addAll(children);
-
-        while (!nodeList2.isEmpty()) {
-            nodeList1 = nodeList2;
-            nodeList2 = new ArrayList<>();
-            int size = 0;
-            for (IndexNode m : nodeList1) {
-                size += m.children.size();
-                nodeList2.addAll(m.children);
-            }
-            sizeList.add(size);
-        }
-
-        return sizeList;
+        mapping = new HashMap<>();
     }
 
     int size() {
@@ -117,12 +98,23 @@ public class IndexNode implements Serializable {
     static int c = 0;
     static int query_per_c = 0;
 
-    void find_once_node(int size) {
+    void find_once_node(int size, HashMap<Integer, ArrayList<Integer>> filteringNodes) {
         // System.out.println(this.nodeID + ":" + traverse_num);
 
         if (traverse_num == 1) {
             for (int i = 0; i < size; i++) {
-                if (g_traverse_num[i] == 1 && Can.get(i)) {
+                if (g_traverse_num[i] == 1 && Can.get(i)) {// possibel node filtering
+                    int node = mapping.get(i)[mapping.get(i).length - 1];// target node
+
+                    ArrayList<Integer> arrayList = filteringNodes.get(i);
+
+                    if (arrayList == null) {
+                        arrayList = new ArrayList<>();
+                        filteringNodes.put(i, arrayList);
+                    }
+                    arrayList.add(node);
+
+                    // filteringNodes.get(i).add(node);
                     c++;
                 }
             }
@@ -130,7 +122,7 @@ public class IndexNode implements Serializable {
             // System.out.println(this);
         }
         for (IndexNode m : children) {
-            m.find_once_node(size);
+            m.find_once_node(size, filteringNodes);
         }
     }
 
@@ -148,46 +140,6 @@ public class IndexNode implements Serializable {
         for (IndexNode m : children) {
             m.addAdjLabels();
         }
-    }
-
-    void getLeafGraph(List<Graph> leafGraphs) {
-        for (IndexNode m : children) {
-            if (m.children.size() == 0) {
-                List<CodeFragment> code = m.getCode();
-                Graph g = generateGraph(code, m.nodeID);
-                leafGraphs.add(g);
-            } else {
-                m.getLeafGraph(leafGraphs);
-            }
-        }
-    }
-
-    Graph generateGraph(List<CodeFragment> code, int id) {
-        byte[] vertices = new byte[code.size()];
-        byte[][] edges = new byte[code.size()][code.size()];
-        int index = 0;
-        for (CodeFragment c : code) {
-            vertices[index] = c.getVlabel();
-            byte eLabels[] = c.getelabel();
-            for (int i = 0; i < eLabels.length; i++) {
-                if (eLabels[i] == 1) {
-                    edges[index][i] = 1;
-                    edges[i][index] = 1;
-                }
-            }
-            index++;
-        }
-        return new Graph(id, vertices, edges);
-    }
-
-    List<CodeFragment> getCode() {
-        List<CodeFragment> code = new ArrayList<>();
-        for (IndexNode n = this; n != null; n = n.parent) {
-            code.add(n.frag);
-        }
-        Collections.reverse(code);
-        code.remove(0);
-        return code;
     }
 
     void addPath(List<CodeFragment> code, int graphIndex, boolean supergraphSearch, int G_size) {
@@ -301,20 +253,21 @@ public class IndexNode implements Serializable {
 
         fil_count += size - Can.cardinality();
         doukeicount += Can.cardinality();
-
         a_filterTime = System.nanoTime() - start;
         search_time += a_filterTime;// filtering time
+
+        HashMap<Integer, ArrayList<Integer>> filteringNodes = new HashMap<>();
+
+        c = 0;
+        // find_once_node(size, filteringNodes);
+        query_per_c += c;
+        // System.out.println(q.id + ":" + c);
 
         write_file_for_Ver(dataset);
 
         verification_VEQ(dataset, mode, q, size);
 
         write_file_indiv(q, bw_data, size);
-
-        c = 0;
-        find_once_node(size);
-        query_per_c += c;
-        // System.out.println(q.id + ":" + c);
 
         init_traverse();
 
@@ -325,6 +278,40 @@ public class IndexNode implements Serializable {
             query_per_c = 0;
         }
         return result;
+    }
+
+    private void write_file_for_Ver(String dataset, HashMap<Integer, ArrayList<Integer>> filteringNodes) {//
+        long start = System.nanoTime();
+
+        try (BufferedWriter bw2 = Files.newBufferedWriter(out)) {
+
+            for (int trueIndex = Can.nextSetBit(0); trueIndex != -1; trueIndex = Can.nextSetBit(trueIndex)) {
+                can.add(trueIndex);
+
+                String file = String.format("%s/g%d.gfu", dataset, trueIndex);
+                Path gPath = Paths.get(file);
+                outGraph(gPath, bw2, filteringNodes.get(trueIndex));
+
+                trueIndex++;
+            }
+
+            bw2.close();
+        } catch (IOException e) {
+            System.exit(1);
+        }
+        write_time += System.nanoTime() - start;
+    }
+
+    private void outGraph(Path gPath, BufferedWriter bw2, ArrayList<Integer> node) {
+        try (BufferedReader br = Files.newBufferedReader(gPath)) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                bw2.write(line + "\n");
+            }
+        } catch (IOException ex) {
+            System.out.println(ex);
+            System.exit(0);
+        }
     }
 
     private void subsearch(Graph q, SearchInfo info, GraphCode impl) {
@@ -371,53 +358,33 @@ public class IndexNode implements Serializable {
         }
     }
 
-    // static int pastV = 0;
-
     private void addIDtoTree(Graph g, SearchInfo info, GraphCode impl, int id) {
         matchGraphIndicesBitSet.set(id, true);
         g_traverse_num[id]++;
+
+        if (g_traverse_num[id] == 1) {
+            mapping.put(id, info.getVertexIDs());
+        } else {// if id>=2 then node do not need multi embeding beacause can not node filtering
+            mapping.remove(id);
+        }
 
         if (children.size() == 0) {
             return;
         }
 
-        // if (backtrackJudge(g, id)) {
-        // return;
-        // }
-
-        for (int v = 0; v < g.order; v++) {
-            if (!info.getOpen().get(v))
-                continue;
-            Pair<CodeFragment, SearchInfo> info0 = impl.enumerateFollowableFragments(g,
-                    info, v, adjLabels);
-            if (info0 == null)
-                continue;
-
-            for (IndexNode m : children) {
-                if (info0.left.contains(m.frag)) {
-                    m.addIDtoTree(g, info0.right, impl, id);
-                    if (info.getClose().cardinality() > m.depth) {
-                        impl.undo(g, info0.right);
-                    }
-                }
-            }
-            impl.undo(g, info0.right);
+        if (backtrackJudge(g, id)) {
+            return;
         }
 
-        // for (int v = 0; v < g.order; v++) {
-        // for (IndexNode m : children) {
+        List<Pair<CodeFragment, SearchInfo>> nextFrags = impl.enumerateFollowableFragments(g, info, adjLabels);
 
-        // if (!info.getOpen().get(v) || m.frag.getVlabel() != g.vertices[v])
-        // continue;
-
-        // SearchInfo info0 = impl.enumerateFollowableFragments(g, info, m, v);
-
-        // if (info0 == null)
-        // continue;
-        // m.addIDtoTree(g, info0, impl, id);
-        // impl.undo(g, info0, v);
-        // }
-        // }
+        for (IndexNode m : children) {
+            for (Pair<CodeFragment, SearchInfo> frag : nextFrags) {
+                if (frag.left.contains(m.frag)) {
+                    m.addIDtoTree(g, frag.right, impl, g.id);
+                }
+            }
+        }
     }
 
     private boolean backtrackJudge(Graph g, int id) {
@@ -431,6 +398,46 @@ public class IndexNode implements Serializable {
             }
         }
         return true;
+    }
+
+    void getLeafGraph(List<Graph> leafGraphs) {
+        for (IndexNode m : children) {
+            if (m.children.size() == 0) {
+                List<CodeFragment> code = m.getCode();
+                Graph g = generateGraph(code, m.nodeID);
+                leafGraphs.add(g);
+            } else {
+                m.getLeafGraph(leafGraphs);
+            }
+        }
+    }
+
+    Graph generateGraph(List<CodeFragment> code, int id) {
+        byte[] vertices = new byte[code.size()];
+        byte[][] edges = new byte[code.size()][code.size()];
+        int index = 0;
+        for (CodeFragment c : code) {
+            vertices[index] = c.getVlabel();
+            byte eLabels[] = c.getelabel();
+            for (int i = 0; i < eLabels.length; i++) {
+                if (eLabels[i] == 1) {
+                    edges[index][i] = 1;
+                    edges[i][index] = 1;
+                }
+            }
+            index++;
+        }
+        return new Graph(id, vertices, edges);
+    }
+
+    List<CodeFragment> getCode() {
+        List<CodeFragment> code = new ArrayList<>();
+        for (IndexNode n = this; n != null; n = n.parent) {
+            code.add(n.frag);
+        }
+        Collections.reverse(code);
+        code.remove(0);
+        return code;
     }
 
     void removeTree() {
@@ -504,7 +511,6 @@ public class IndexNode implements Serializable {
             System.out.println(ex);
             System.exit(0);
         }
-
     }
 
     private void readAnswer(Path path, ArrayList<Integer> can, BitSet result) {

@@ -6,4 +6,6 @@ public interface SearchInfo {
     abstract BitSet getOpen();
 
     abstract BitSet getClose();
+
+    abstract int[] getVertexIDs();
 }

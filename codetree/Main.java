@@ -8,14 +8,13 @@ import codetree.vertexBased.XAcgmCode;
 import java.io.*;
 import java.nio.file.*;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 class Main {
     static Random rand;
 
     private static String sdfFilename = "aido99sd.sdf";
     private static String resultFilename;
-    private static String gfuFilename = new String();
+    private static String gfuFilename;
     private static String q_gfuFilename;
     private static String dataset;
     private static GraphCode graphCode;
@@ -39,7 +38,7 @@ class Main {
             allfind.write(
                     "dataset,depth,addPathtoTree(ms),Tree_size,Tree_size(new),remove_time(ms),addIDtoTree(ms),Build_tree(ms)\n");
 
-            for (datasetID = 0; datasetID <= 0; datasetID++) {
+            for (datasetID = 3; datasetID <= 3; datasetID++) {
 
                 if (datasetID < 0 || datasetID > 6) {
                     System.out.println("無効なデータセットIDです");
@@ -56,7 +55,7 @@ class Main {
                     List<ArrayList<Pair<Integer, Graph>>> Q = new ArrayList<>();
                     final int querysize = 100;
                     final int minedge = 4;
-                    final int maxedge = 64;
+                    final int maxedge = 4;
 
                     for (int i = 0; i < datasetSize; i++) {
                         String filename = String.format("%s/g%d.gfu", dataset, i);
