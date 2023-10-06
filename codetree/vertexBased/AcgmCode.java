@@ -213,62 +213,6 @@ public class AcgmCode
                 }
             }
         }
-
         return infoList;
     }
-
-    // @Override
-    // public SearchInfo enumerateFollowableFragments(Graph g, SearchInfo info0,
-    // IndexNode m, int v) {
-    // AcgmSearchInfo info = (AcgmSearchInfo) info0;
-
-    // final int depth = info.vertexIDs.length;
-
-    // byte[] eLabels = new byte[depth];
-
-    // for (int i = 0; i < depth; ++i) {
-    // final int u = info.vertexIDs[i];
-    // eLabels[i] = g.edges[u][v];
-    // }
-
-    // if (new AcgmCodeFragment(g.vertices[v], eLabels).contains(m.frag)) {
-    // return new AcgmSearchInfo(info, g, v, 1);
-    // } else {
-    // return null;
-    // }
-    // }
-
-    @Override
-    public Pair<CodeFragment, SearchInfo> enumerateFollowableFragments(Graph g,
-            SearchInfo info0, int v, HashSet<Byte> childrenVlabel) {
-
-        if (!childrenVlabel.contains(g.vertices[v]))
-            return null;
-        AcgmSearchInfo info = (AcgmSearchInfo) info0;
-
-        // final int depth = info.vertexIDs.length;
-
-        final int depth = info.vertexIDsList.size();
-
-        byte[] eLabels = new byte[depth];
-
-        for (int i = 0; i < depth; ++i) {
-            // final int u = info.vertexIDs[i];
-            final int u = info.vertexIDsList.get(i);
-            eLabels[i] = g.edges[u][v];
-        }
-
-        return new Pair<CodeFragment, SearchInfo>(new AcgmCodeFragment(g.vertices[v],
-                eLabels),
-                new AcgmSearchInfo(info, g, v, 1));
-    }
-
-    @Override
-    public SearchInfo undo(Graph g, SearchInfo info0) {
-        AcgmSearchInfo info = (AcgmSearchInfo) info0;
-
-        return new AcgmSearchInfo(g, info);
-
-    }
-
 }

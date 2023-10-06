@@ -113,6 +113,7 @@ public class IndexNode implements Serializable {
                         filteringNodes.put(i, arrayList);
                     }
                     arrayList.add(node);
+                    filteringNodes.put(i, arrayList);
 
                     // filteringNodes.get(i).add(node);
                     c++;
@@ -236,7 +237,7 @@ public class IndexNode implements Serializable {
     }
 
     BitSet subsearch(Graph q, GraphCode impl, int size, BufferedWriter bw, String mode, String dataset,
-            BufferedWriter bw_data, BufferedWriter allbw)
+            BufferedWriter bw_data, BufferedWriter allbw, HashMap<Integer, ArrayList<String>> gMaps, List<Graph> G)
             throws IOException, InterruptedException {
 
         long start = System.nanoTime();
@@ -247,6 +248,7 @@ public class IndexNode implements Serializable {
         for (Pair<IndexNode, SearchInfo> info : infoList) {
             info.left.subsearch(q, info.right, impl);
         }
+        infoList = null;
         result.or(In);
         Can.or(Ex);
         Can.xor(In);
@@ -259,11 +261,11 @@ public class IndexNode implements Serializable {
         HashMap<Integer, ArrayList<Integer>> filteringNodes = new HashMap<>();
 
         c = 0;
-        // find_once_node(size, filteringNodes);
+        find_once_node(size, filteringNodes);
         query_per_c += c;
         // System.out.println(q.id + ":" + c);
 
-        write_file_for_Ver(dataset);
+        write_file_for_Ver(gMaps, filteringNodes, G);
 
         verification_VEQ(dataset, mode, q, size);
 
@@ -280,37 +282,72 @@ public class IndexNode implements Serializable {
         return result;
     }
 
-    private void write_file_for_Ver(String dataset, HashMap<Integer, ArrayList<Integer>> filteringNodes) {//
-        long start = System.nanoTime();
-
+    private void write_file_for_Ver(HashMap<Integer, ArrayList<String>> gMaps,
+            HashMap<Integer, ArrayList<Integer>> filteringNodes, List<Graph> G) {
         try (BufferedWriter bw2 = Files.newBufferedWriter(out)) {
 
-            for (int trueIndex = Can.nextSetBit(0); trueIndex != -1; trueIndex = Can.nextSetBit(trueIndex)) {
+            for (int trueIndex = Can.nextSetBit(0); trueIndex != -1; trueIndex++, trueIndex = Can
+                    .nextSetBit(trueIndex)) {
                 can.add(trueIndex);
 
-                String file = String.format("%s/g%d.gfu", dataset, trueIndex);
-                Path gPath = Paths.get(file);
-                outGraph(gPath, bw2, filteringNodes.get(trueIndex));
+                if (filteringNodes.get(trueIndex) != null && filteringNodes.get(trueIndex).size() > 0) {// a graph be
+                                                                                                        // able to be
+                                                                                                        // possible
+                                                                                                        // filtering
+                    // node
+                    // Graph g = (Graph) G.get(trueIndex);
+                    System.out.println(filteringNodes.get(trueIndex).size());
+                    Graph g = G.get(trueIndex);
+                    byte[] newVertices = new byte[g.order];
+                    byte[][] newEdges = new byte[g.order][];
 
-                trueIndex++;
+                    System.arraycopy(g.vertices, 0, newVertices, 0, g.order);
+                    System.arraycopy(g.edges, 0, newEdges, 0, g.order);
+
+                    int originalSize = g.size;
+                    int originalOrder = g.order;
+
+                    for (int v : filteringNodes.get(trueIndex)) {
+                        originalOrder--;
+                        newVertices[v] = -1;
+                        for (int u : g.adjList[v]) {
+                            originalSize--;
+                            newEdges[v][u] = 0;
+                            newEdges[u][v] = 0;
+                        }
+                    }
+
+                    if (originalOrder == 0 || originalSize == 0)
+                        continue;
+
+                    bw2.write("#" + g.id + "\n");
+                    bw2.write(originalOrder + "\n");
+                    for (int i = 0; i < g.order; i++) {
+                        if (newVertices[i] != -1) {
+                            bw2.write(newVertices[i] + "\n");
+                        }
+                    }
+                    bw2.write(originalSize + "\n");
+                    for (int i = 0; i < g.order; i++) {
+                        for (int j = i; j < g.order; j++) {
+                            if (newEdges[i][j] > 0) {
+                                bw2.write(i + " " + j + "\n");
+                            }
+                        }
+                    }
+                } else {
+
+                    for (String line : gMaps.get(trueIndex)) {
+                        bw2.write(line + "\n");
+                    }
+                }
             }
 
             bw2.close();
-        } catch (IOException e) {
-            System.exit(1);
-        }
-        write_time += System.nanoTime() - start;
-    }
+        } catch (
 
-    private void outGraph(Path gPath, BufferedWriter bw2, ArrayList<Integer> node) {
-        try (BufferedReader br = Files.newBufferedReader(gPath)) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                bw2.write(line + "\n");
-            }
-        } catch (IOException ex) {
-            System.out.println(ex);
-            System.exit(0);
+        IOException e) {
+            System.exit(1);
         }
     }
 
@@ -372,9 +409,9 @@ public class IndexNode implements Serializable {
             return;
         }
 
-        if (backtrackJudge(g, id)) {
-            return;
-        }
+        // if (backtrackJudge(g, id)) {
+        // return;
+        // }
 
         List<Pair<CodeFragment, SearchInfo>> nextFrags = impl.enumerateFollowableFragments(g, info, adjLabels);
 

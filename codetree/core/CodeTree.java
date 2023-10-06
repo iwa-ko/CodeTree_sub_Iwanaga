@@ -208,8 +208,8 @@ public class CodeTree implements Serializable {
     }
 
     public BitSet subgraphSearch(Graph query, BufferedWriter bw, int size, String mode, String dataset,
-            BufferedWriter bwout, BufferedWriter allbw)
+            BufferedWriter bwout, BufferedWriter allbw, HashMap<Integer, ArrayList<String>> gMaps, List<Graph> G)
             throws IOException, InterruptedException {
-        return root.subsearch(query, impl, size, bw, mode, dataset, bwout, allbw);
+        return root.subsearch(query, impl, size, bw, mode, dataset, bwout, allbw, gMaps, G);
     }
 }

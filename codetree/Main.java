@@ -38,7 +38,7 @@ class Main {
             allfind.write(
                     "dataset,depth,addPathtoTree(ms),Tree_size,Tree_size(new),remove_time(ms),addIDtoTree(ms),Build_tree(ms)\n");
 
-            for (datasetID = 3; datasetID <= 3; datasetID++) {
+            for (datasetID = 0; datasetID <= 0; datasetID++) {
 
                 if (datasetID < 0 || datasetID > 6) {
                     System.out.println("無効なデータセットIDです");
@@ -51,17 +51,18 @@ class Main {
 
                     System.out.println("部分グラフ検索を開始します");
 
-                    List<Graph> G = new ArrayList<Graph>();
                     List<ArrayList<Pair<Integer, Graph>>> Q = new ArrayList<>();
                     final int querysize = 100;
                     final int minedge = 4;
                     final int maxedge = 4;
 
-                    for (int i = 0; i < datasetSize; i++) {
-                        String filename = String.format("%s/g%d.gfu", dataset, i);
-                        Graph g = SdfFileReader.readFileQuery_gfu(Paths.get(filename));
-                        G.add(g);
-                    }
+                    List<Graph> G = SdfFileReader.readFile_gfu(Paths.get(gfuFilename));
+                    // List<Graph> G = new ArrayList<Graph>();
+                    // for (int i = 0; i < datasetSize; i++) {
+                    // String filename = String.format("%s/g%d.gfu", dataset, i);
+                    // Graph g = SdfFileReader.readFileQuery_gfu(Paths.get(filename));
+                    // G.add(g);
+                    // }
 
                     for (int numOfEdge = minedge; numOfEdge <= maxedge; numOfEdge *= 2) {
                         ArrayList<Pair<Integer, Graph>> qset = new ArrayList<>();
@@ -123,26 +124,9 @@ class Main {
                                     + String.format("%.6f", (double) (System.nanoTime() - start) / 1000 / 1000)
                                     + ",");
 
-                            // CodeTree tree2 = null;
-                            // try {
-                            // String codetree = String.format("data_structure/%s_data_structure.ser",
-                            // dataset);
-                            // FileInputStream fileIn = new FileInputStream(codetree);
-                            // ObjectInputStream in = new ObjectInputStream(fileIn);
-                            // tree2 = (CodeTree) in.readObject();
-                            // in.close();
-                            // fileIn.close();
-                            // System.out.println("ファイルからデータ構造がデシリアライズされました。");
-                            // } catch (IOException e) {
-                            // e.printStackTrace();
-                            // } catch (ClassNotFoundException e) {
-                            // e.printStackTrace();
-                            // }
+                            // G = null;
 
-                            G = null;
-
-                            // if (true)
-                            // continue;
+                            HashMap<Integer, ArrayList<String>> gMaps = makeGmaps(gfuFilename);
 
                             int index = minedge;
                             String mode = null;
@@ -193,7 +177,7 @@ class Main {
                                         }
                                         BitSet result = tree.subgraphSearch(q.right, bw, datasetSize, mode,
                                                 dataset,
-                                                bwout, allbw);
+                                                bwout, allbw, gMaps, G);
 
                                         bw2.write(
                                                 q.left.toString() + " " + result.cardinality() + "個"
@@ -352,40 +336,30 @@ class Main {
         }
     }
 
-    // String datasetPath = String.format("datasets/%s.ser", dataset);
-    // File file = new File(datasetPath);
-    // if (file.exists()) { // ファイルが存在しない場合
-    // try {
-    // FileInputStream fileIn = new FileInputStream(datasetPath);
-    // ObjectInputStream in = new ObjectInputStream(fileIn);
-    // G = (List<Graph>) in.readObject();
-    // in.close();
-    // fileIn.close();
-    // System.out.println("ファイルからデータ構造がデシリアライズされました。");
-    // } catch (ClassNotFoundException e) {
-    // e.printStackTrace();
-    // System.exit(1);
-    // }
-    // } else {
-    // for (int i = 0; i < datasetSize; i++) {
-    // String filename = String.format("%s/g%d.gfu", dataset, i);
-    // Graph g = SdfFileReader.readFileQuery_gfu(Paths.get(filename));
-    // G.add(g);
-    // }
-    // try {
-    // FileOutputStream fileOut = new FileOutputStream(datasetPath);
-    // ObjectOutputStream objout = new ObjectOutputStream(fileOut);
-    // objout.writeObject(G);
-    // objout.close();
-    // fileOut.close();
-    // System.out.println("データセットがシリアライズされ、ファイルに保存されました。");
-    // } catch (IOException e) {
-    // e.printStackTrace();
-    // }
-    // }
-
-    // dataset_search(G);
-    // VertexLabel.orderLabel(G);
+    static HashMap<Integer, ArrayList<String>> makeGmaps(String filePath) {
+        HashMap<Integer, ArrayList<String>> gMaps = new HashMap<>();
+        try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
+            String line = "a";
+            while (line != null) {
+                if (line.startsWith("#")) {
+                    int id = Integer.parseInt(line.substring(1));
+                    ArrayList<String> lines = new ArrayList<>();
+                    lines.add(line);
+                    while ((line = br.readLine()) != null) {
+                        if (line.startsWith("#"))
+                            break;
+                        lines.add(line);
+                    }
+                    gMaps.put(id, lines);
+                } else {
+                    line = br.readLine();
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return gMaps;
+    }
 
     private static void query_search(ArrayList<Pair<Integer, Graph>> Q, int numOfEdge, String mode) {
 
