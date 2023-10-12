@@ -63,14 +63,14 @@ public class Graph implements Serializable {
 
         final int n = order();
         for (int v = 0; v < n; ++v) {
-            for (int u = 0; u < n; ++u) {
+            for (int u = v; u < n; ++u) {
                 if (edges[v][u] > 0) {
                     ++s;
                 }
             }
         }
 
-        return s / 2;
+        return s;
     }
 
     public double degree() {

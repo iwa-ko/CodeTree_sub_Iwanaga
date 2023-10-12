@@ -1,6 +1,7 @@
 #dir
 result/*
 CodeTree_result_final2/*.csv
+*.txt
 
 #file
 datagraph.gfu
