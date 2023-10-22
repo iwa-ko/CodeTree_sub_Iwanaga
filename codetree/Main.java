@@ -134,9 +134,9 @@ class Main {
 
                             for (ArrayList<Pair<Integer, Graph>> Q_set : Q) {
 
-                                // if (index > 4) {
-                                // break;
-                                // }
+                                if (index > maxedge) {
+                                    break;
+                                }
 
                                 // if ((datasetID == 3 && index >= 32) || (datasetID == 6 && index >= 16)
                                 // || index >= 128) {
@@ -161,6 +161,9 @@ class Main {
                                             index / 32);
                                     mode = "bfs";
                                 }
+
+                                if (mode.equals("bfs"))
+                                    continue;
 
                                 try (BufferedWriter bwout = new BufferedWriter(
                                         new OutputStreamWriter(new FileOutputStream(data_out), "UTF-8"));) {
