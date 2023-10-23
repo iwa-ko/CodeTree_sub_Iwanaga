@@ -53,16 +53,10 @@ class Main {
 
                     List<ArrayList<Pair<Integer, Graph>>> Q = new ArrayList<>();
                     final int querysize = 100;
-                    final int minedge = 4;
-                    final int maxedge = 4;
+                    final int minedge = 8;
+                    final int maxedge = 8;
 
                     List<Graph> G = SdfFileReader.readFile_gfu(Paths.get(gfuFilename));
-                    // List<Graph> G = new ArrayList<Graph>();
-                    // for (int i = 0; i < datasetSize; i++) {
-                    // String filename = String.format("%s/g%d.gfu", dataset, i);
-                    // Graph g = SdfFileReader.readFileQuery_gfu(Paths.get(filename));
-                    // G.add(g);
-                    // }
 
                     for (int numOfEdge = minedge; numOfEdge <= maxedge; numOfEdge *= 2) {
                         ArrayList<Pair<Integer, Graph>> qset = new ArrayList<>();
@@ -115,6 +109,7 @@ class Main {
                         try (BufferedWriter bw = Files.newBufferedWriter(res)) {
                             long start = System.nanoTime();
 
+                            System.out.println("tree1");
                             CodeTree tree = new CodeTree(graphCode, G, bw, dataset, allfind);
 
                             bw.write("Build tree(ms): "
@@ -123,6 +118,9 @@ class Main {
                             allfind.write(","
                                     + String.format("%.6f", (double) (System.nanoTime() - start) / 1000 / 1000)
                                     + ",");
+
+                            System.out.println("\ntree2");
+                            CodeTree2 tree2 = new CodeTree2(graphCode, G, bw, dataset, allfind);
 
                             // G = null;
 
@@ -180,7 +178,7 @@ class Main {
                                         }
                                         BitSet result = tree.subgraphSearch(q.right, bw, datasetSize, mode,
                                                 dataset,
-                                                bwout, allbw, gMaps, G);
+                                                bwout, allbw, gMaps, G, tree2.root);
 
                                         bw2.write(
                                                 q.left.toString() + " " + result.cardinality() + "個"

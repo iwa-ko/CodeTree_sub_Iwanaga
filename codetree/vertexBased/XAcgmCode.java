@@ -205,6 +205,19 @@ public class XAcgmCode
         return codeList;
     }
 
+    @Override
+    public List<Pair<IndexNode, SearchInfo>> beginSearch_sub(Graph g, IndexNode root) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'beginSearch_sub'");
+    }
+
+    @Override
+    public List<Pair<CodeFragment, SearchInfo>> enumerateFollowableFragments(Graph g, SearchInfo info,
+            HashSet<Byte> childrenVlabel) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'enumerateFollowableFragments'");
+    }
+
 }
 // package codetree.vertexBased;
 
