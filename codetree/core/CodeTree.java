@@ -59,7 +59,7 @@ public class CodeTree implements Serializable {
 
             case "ppigo":
                 limDepth = 7;
-                // rand = new Random(1);
+                rand = new Random(1);
                 break;
         }
 

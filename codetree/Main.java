@@ -53,8 +53,8 @@ class Main {
 
                     List<ArrayList<Pair<Integer, Graph>>> Q = new ArrayList<>();
                     final int querysize = 100;
-                    final int minedge = 8;
-                    final int maxedge = 8;
+                    final int minedge = 4;
+                    final int maxedge = 64;
 
                     List<Graph> G = SdfFileReader.readFile_gfu(Paths.get(gfuFilename));
 
@@ -178,7 +178,7 @@ class Main {
                                         }
                                         BitSet result = tree.subgraphSearch(q.right, bw, datasetSize, mode,
                                                 dataset,
-                                                bwout, allbw, gMaps, G, tree2.root);
+                                                bwout, allbw, gMaps, G, tree2.root2);
 
                                         bw2.write(
                                                 q.left.toString() + " " + result.cardinality() + "個"

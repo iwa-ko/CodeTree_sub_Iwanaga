@@ -10,7 +10,7 @@ import java.util.*;
 
 public class CodeTree2 implements Serializable {
     GraphCode impl;
-    public IndexNode root;
+    public IndexNode root2;
     public static int datasetSize;
     Random rand;
 
@@ -20,7 +20,7 @@ public class CodeTree2 implements Serializable {
         int limDepth = 0;
         datasetSize = G.size();// test
         this.impl = impl;
-        this.root = new IndexNode(null, null, datasetSize);
+        this.root2 = new IndexNode(null, null, datasetSize);
         rand = new Random(2);
 
         List<CodeFragment> code = new ArrayList<>();
@@ -58,13 +58,13 @@ public class CodeTree2 implements Serializable {
                 break;
         }
 
-        int loop = 1;
+        int loop = 10;
 
         for (Graph g : G) {
             for (int i = 0; i < loop; i++) {
                 int start_vertice = rand.nextInt(g.order);
-                code = impl.computeCanonicalCode(g, start_vertice, limDepth);
-                root.addPath(code, g.id, false, datasetSize);
+                code = impl.computeCanonicalCode_adj(g, start_vertice, limDepth);
+                root2.addPath(code, g.id, false, datasetSize);
             }
         }
 
@@ -74,25 +74,25 @@ public class CodeTree2 implements Serializable {
 
         System.out.println("depth " + (limDepth));
         bw.write("limDepth" + (limDepth) + "\n");
-        System.out.println("Tree size: " + root.size());
+        System.out.println("Tree size: " + root2.size());
         System.out.println("addPathtoTree(ms): " + (System.nanoTime() - time) / 1000 /
                 1000);
-        bw.write("Tree size(original): " + root.size() + "\n");
+        bw.write("Tree size(original): " + root2.size() + "\n");
         bw.write("addPathtoTree(ms): " + String.format("%.6f", (double) (System.nanoTime() - time) / 1000 / 1000)
                 + "\n");
 
         long start = System.nanoTime();
 
-        int treesize = root.size();
+        int treesize = root2.size();
 
         System.out.println("tree size (original): " + treesize);
         index.write(treesize + ",");
 
         List<Graph> leafGraphs = new ArrayList<>();
-        root.getLeafGraph(leafGraphs);
+        root2.getLeafGraph(leafGraphs);
         inclusionCheck2(impl, leafGraphs);
-        root.removeTree();
-        treesize = root.size();
+        root2.removeTree();
+        treesize = root2.size();
 
         System.out.println("tree size (new): " + treesize);
         bw.write("Tree size(new): " + treesize + "\n");
@@ -102,7 +102,7 @@ public class CodeTree2 implements Serializable {
         System.out.println(
                 "remove node time :" + String.format("%.6f", (double) (System.nanoTime() - time) / 1000 / 1000));
 
-        root.addAdjLabels();
+        root2.addAdjLabels();
 
         start = System.nanoTime();
         System.out.println("グラフIDの計算中");
@@ -137,7 +137,7 @@ public class CodeTree2 implements Serializable {
             } else if (g.id % (G.size() / 10) == 0) {
                 System.out.print(".");
             }
-            root.addIDtoTree2(g, impl, g.id);
+            root2.addIDtoTree2(g, impl, g.id);
         }
     }
 
@@ -151,7 +151,7 @@ public class CodeTree2 implements Serializable {
                 continue;
 
             idList.add(g.id);
-            root.pruningEquivalentNodes(g, impl, g.id, idList, removeIDList);
+            root2.pruningEquivalentNodes(g, impl, g.id, idList, removeIDList);
 
         }
     }

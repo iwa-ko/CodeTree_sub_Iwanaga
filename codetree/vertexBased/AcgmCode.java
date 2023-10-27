@@ -93,8 +93,52 @@ public class AcgmCode
 
             for (AcgmSearchInfo info : infoList1) {
 
-                // for (int v : g.adjList[info.vertexIDs[depth - 1]]) {
                 for (int v = 0; v < n; ++v) {
+                    if (info.open.get(v)) {
+                        next.add(v);
+                    }
+                }
+                if (next.size() == 0) {
+                    return code;
+
+                }
+
+                int random = rand.nextInt(next.size());
+                int v2 = next.get(random);
+
+                for (int i = 0; i < depth; ++i) {
+                    final int u = info.vertexIDs[i];
+                    eLabels[i] = g.edges[u][v2];
+                }
+
+                AcgmCodeFragment frag = new AcgmCodeFragment(g.vertices[v2], eLabels);
+                infoList1.clear();
+                infoList1.add(new AcgmSearchInfo(info, g, v2));
+                code.add(frag);
+            }
+        }
+        return code;
+    }
+
+    @Override
+    public List<CodeFragment> computeCanonicalCode_adj(Graph g, int start, int limDepth) {
+        final int n = g.order();
+        ArrayList<CodeFragment> code = new ArrayList<>(n);
+        ArrayList<AcgmSearchInfo> infoList1 = new ArrayList<>();
+
+        code.add(new AcgmCodeFragment(g.vertices[start], 0));
+
+        infoList1.add(new AcgmSearchInfo(g, start));
+
+        Random rand = new Random(0);
+
+        for (int depth = 1; depth < limDepth; ++depth) {
+            byte[] eLabels = new byte[depth];
+            ArrayList<Integer> next = new ArrayList<>();
+
+            for (AcgmSearchInfo info : infoList1) {
+
+                for (int v : g.adjList[info.vertexIDs[depth - 1]]) {
                     if (info.open.get(v)) {
                         next.add(v);
                     }
@@ -199,18 +243,32 @@ public class AcgmCode
         return frags;
     }
 
-    @Override
-    public List<Pair<IndexNode, SearchInfo>> beginSearch_sub(Graph g, IndexNode root) {
-        ArrayList<Pair<IndexNode, SearchInfo>> infoList = new ArrayList<>();
+    @Override // subgraph search
+    public List<Pair<CodeFragment, SearchInfo>> enumerateFollowableFragments_adj(Graph g, SearchInfo info0,
+            HashSet<Byte> childrenVlabel) {
+        ArrayList<Pair<CodeFragment, SearchInfo>> frags = new ArrayList<>();
 
-        for (IndexNode m : root.children) {
-            for (int v = 0; v < g.order; ++v) {
-                AcgmCodeFragment frag = (AcgmCodeFragment) m.frag;
-                if (g.vertices[v] == frag.vLabel) {// 頂点だけ注目すれば良い
-                    infoList.add(new Pair<IndexNode, SearchInfo>(m, new AcgmSearchInfo(g, v)));
-                }
+        AcgmSearchInfo info = (AcgmSearchInfo) info0;
+
+        final int depth = info.vertexIDs.length;
+
+        byte[] eLabels = new byte[depth];
+        for (int v : g.adjList[info.vertexIDs[depth - 1]]) {
+
+            if (!info.open.get(v) || !childrenVlabel.contains(g.vertices[v])) {// 未探索頂点のみが捜索対象
+                continue;
             }
+
+            for (int i = 0; i < depth; ++i) {
+                final int u = info.vertexIDs[i];
+                eLabels[i] = g.edges[u][v];// 辺ラベル決定
+            }
+
+            frags.add(new Pair<CodeFragment, SearchInfo>(
+                    new AcgmCodeFragment(g.vertices[v], eLabels), new AcgmSearchInfo(info, g, v)));
         }
-        return infoList;
+
+        return frags;
     }
+
 }
