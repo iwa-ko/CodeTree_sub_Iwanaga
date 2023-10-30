@@ -69,6 +69,13 @@ final class AcgmSearchInfo
         return true;
     }
 
+    AcgmSearchInfo(AcgmSearchInfo src, Integer v) {
+        final int n = src.vertexIDs.length;
+        vertexIDs = new int[n + 1];
+        System.arraycopy(src.vertexIDs, 0, vertexIDs, 0, n);
+        vertexIDs[n] = v;
+    }
+
     // // no clone
     // AcgmSearchInfo(AcgmSearchInfo src, Graph g, Integer v, int i) {
 

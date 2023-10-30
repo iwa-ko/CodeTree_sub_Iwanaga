@@ -20,7 +20,7 @@ public class CodeTree implements Serializable {
         int limDepth = 0;
         datasetSize = G.size();// test
         this.impl = impl;
-        this.root = new IndexNode(null, null, datasetSize);
+        this.root = new IndexNode(null, null);
         rand = new Random(2);
 
         List<CodeFragment> code = new ArrayList<>();
@@ -29,7 +29,7 @@ public class CodeTree implements Serializable {
 
         List<ArrayList<CodeFragment>> codelist = impl.computeCanonicalCode(Graph.numOflabels(G));
         for (ArrayList<CodeFragment> c : codelist) {
-            root.addPath(c, -1, false, datasetSize);
+            root.addPath(c, -1, false);
         }
 
         switch (dataset) {
@@ -71,7 +71,7 @@ public class CodeTree implements Serializable {
             for (int i = 0; i < loop; i++) {
                 int start_vertice = rand.nextInt(g.order);
                 code = impl.computeCanonicalCode(g, start_vertice, limDepth);
-                root.addPath(code, g.id, false, datasetSize);
+                root.addPath(code, g.id, false);
             }
         }
 
@@ -137,14 +137,14 @@ public class CodeTree implements Serializable {
 
     public CodeTree(GraphCode impl, List<Graph> G, int b) {
         this.impl = impl;
-        this.root = new IndexNode(null, null, 0);
+        this.root = new IndexNode(null, null);
 
         System.out.print("Indexing");
         for (int i = 0; i < G.size(); ++i) {
             Graph g = G.get(i);
 
             List<CodeFragment> code = impl.computeCanonicalCode(g, b);// 準正準コードを得る
-            root.addPath(code, i, true, 0);
+            root.addPath(code, i, true);
 
             if (i % 100000 == 0) {
                 System.out.println();

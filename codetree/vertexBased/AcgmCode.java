@@ -255,9 +255,13 @@ public class AcgmCode
         byte[] eLabels = new byte[depth];
         for (int v : g.adjList[info.vertexIDs[depth - 1]]) {
 
-            if (!info.open.get(v) || !childrenVlabel.contains(g.vertices[v])) {// 未探索頂点のみが捜索対象
+            if (!info.contain(info.vertexIDs, v) || !childrenVlabel.contains(g.vertices[v])) {// 未探索頂点のみが捜索対象
                 continue;
             }
+            // if (!info.open.get(v) || !childrenVlabel.contains(g.vertices[v])) {//
+            // 未探索頂点のみが捜索対象
+            // continue;
+            // }
 
             for (int i = 0; i < depth; ++i) {
                 final int u = info.vertexIDs[i];

@@ -255,13 +255,21 @@ public class Graph implements Serializable {
 
     public List<Integer> getVertexList(int m) {
         ArrayList<Integer> res = new ArrayList<>();
-
         for (int v = 0; v < order(); ++v) {
             if (vertices[v] == m) {
                 res.add(v);
             }
         }
+        return res;
+    }
 
+    public int getVertex(int m) {
+        int res = -1;
+        for (int v = 0; v < order(); ++v) {
+            if (vertices[v] == m) {
+                return v;
+            }
+        }
         return res;
     }
 

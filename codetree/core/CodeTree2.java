@@ -20,7 +20,7 @@ public class CodeTree2 implements Serializable {
         int limDepth = 0;
         datasetSize = G.size();// test
         this.impl = impl;
-        this.root2 = new IndexNode(null, null, datasetSize);
+        this.root2 = new IndexNode(null, null);
         rand = new Random(2);
 
         List<CodeFragment> code = new ArrayList<>();
@@ -29,7 +29,8 @@ public class CodeTree2 implements Serializable {
 
         switch (dataset) {
             case "AIDS":
-                limDepth = 5;
+                // limDepth = 5;
+                limDepth = 9;
                 break;
 
             case "COLLAB":
@@ -49,24 +50,41 @@ public class CodeTree2 implements Serializable {
                 break;
 
             case "pcms":
-                limDepth = 6;
+                limDepth = 10;
                 break;
 
             case "ppigo":
-                limDepth = 7;
+                limDepth = 8;
                 // rand = new Random(1);
                 break;
         }
 
-        int loop = 10;
+        // int loop = 20;
+        int loop = 5;
 
         for (Graph g : G) {
             for (int i = 0; i < loop; i++) {
                 int start_vertice = rand.nextInt(g.order);
                 code = impl.computeCanonicalCode_adj(g, start_vertice, limDepth);
-                root2.addPath(code, g.id, false, datasetSize);
+                root2.addPath(code, g.id, false);
             }
         }
+
+        // int sigma = Graph.numOflabels(G);
+        // int start_label = sigma / 10;
+        // // List<Integer> minVertexList = new ArrayList<>();
+        // for (Graph g : G) {
+        // for (int l = 0; l < sigma; l++) {
+        // int minVertex = g.getVertex(l);
+        // if (minVertex == -1)
+        // continue;
+        // for (int i = 0; i < loop; i++) {
+        // code = impl.computeCanonicalCode_adj(g, minVertex, limDepth);
+        // // code = impl.computeCanonicalCode(g, start_vertice, limDepth);
+        // root2.addPath(code, g.id, false);
+        // }
+        // }
+        // }
 
         // index.write(dataset + "," + limDepth + ","
         // + String.format("%.6f", (double) (System.nanoTime() - time) / 1000 / 1000) +
@@ -138,6 +156,9 @@ public class CodeTree2 implements Serializable {
                 System.out.print(".");
             }
             root2.addIDtoTree2(g, impl, g.id);
+            // root2.addIDtoTree(g, impl, g.id);
+
+            root2.init_gtraverse_num();
         }
     }
 

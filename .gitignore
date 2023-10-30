@@ -6,3 +6,6 @@ CodeTree_result_final2/*.csv
 #file
 datagraph.gfu
 output2.txt
+
+.vscode
+*.json
