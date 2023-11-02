@@ -122,18 +122,17 @@ public class AcgmCode
 
     @Override
     public List<CodeFragment> computeCanonicalCode_adj(Graph g, int start, int limDepth) {
-        final int n = g.order();
-        ArrayList<CodeFragment> code = new ArrayList<>(n);
+        ArrayList<CodeFragment> code = new ArrayList<>();
         ArrayList<AcgmSearchInfo> infoList1 = new ArrayList<>();
 
-        code.add(new AcgmCodeFragment(g.vertices[start], 0));
+        code.add(new AcgmCodeFragment(g.vertices[start]));
 
         infoList1.add(new AcgmSearchInfo(g, start));
 
         Random rand = new Random(0);
 
         for (int depth = 1; depth < limDepth; ++depth) {
-            byte[] eLabels = new byte[depth];
+            // byte[] eLabels = new byte[depth];
             ArrayList<Integer> next = new ArrayList<>();
 
             for (AcgmSearchInfo info : infoList1) {
@@ -151,12 +150,16 @@ public class AcgmCode
                 int random = rand.nextInt(next.size());
                 int v2 = next.get(random);
 
-                for (int i = 0; i < depth; ++i) {
-                    final int u = info.vertexIDs[i];
-                    eLabels[i] = g.edges[u][v2];
-                }
+                // eLabels[depth - 1] = 1;
 
-                AcgmCodeFragment frag = new AcgmCodeFragment(g.vertices[v2], eLabels);
+                // for (int i = 0; i < depth; ++i) {
+                // final int u = info.vertexIDs[i];
+                // eLabels[i] = g.edges[u][v2];
+                // }
+
+                // AcgmCodeFragment frag = new AcgmCodeFragment(g.vertices[v2], eLabels);
+                AcgmCodeFragment frag = new AcgmCodeFragment(g.vertices[v2]);
+
                 infoList1.clear();
                 infoList1.add(new AcgmSearchInfo(info, g, v2));
                 code.add(frag);
@@ -217,12 +220,9 @@ public class AcgmCode
 
         AcgmSearchInfo info = (AcgmSearchInfo) info0;
 
-        // int n = g.order;
-
         final int depth = info.vertexIDs.length;
 
         byte[] eLabels = new byte[depth];
-        // for (int v = 0; v < n; ++v) {
 
         for (int v = info.open.nextSetBit(0); v != -1; v = info.open
                 .nextSetBit(++v)) {
@@ -252,24 +252,14 @@ public class AcgmCode
 
         final int depth = info.vertexIDs.length;
 
-        byte[] eLabels = new byte[depth];
         for (int v : g.adjList[info.vertexIDs[depth - 1]]) {
 
             if (!info.contain(info.vertexIDs, v) || !childrenVlabel.contains(g.vertices[v])) {// 未探索頂点のみが捜索対象
                 continue;
             }
-            // if (!info.open.get(v) || !childrenVlabel.contains(g.vertices[v])) {//
-            // 未探索頂点のみが捜索対象
-            // continue;
-            // }
-
-            for (int i = 0; i < depth; ++i) {
-                final int u = info.vertexIDs[i];
-                eLabels[i] = g.edges[u][v];// 辺ラベル決定
-            }
 
             frags.add(new Pair<CodeFragment, SearchInfo>(
-                    new AcgmCodeFragment(g.vertices[v], eLabels), new AcgmSearchInfo(info, g, v)));
+                    new AcgmCodeFragment(g.vertices[v]), new AcgmSearchInfo(info, v)));
         }
 
         return frags;

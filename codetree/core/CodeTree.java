@@ -35,6 +35,8 @@ public class CodeTree implements Serializable {
         switch (dataset) {
             case "AIDS":
                 limDepth = 5;
+                // limDepth = 8;
+
                 break;
 
             case "COLLAB":
@@ -102,6 +104,7 @@ public class CodeTree implements Serializable {
         treesize = root.size();
 
         System.out.println("tree size (new): " + treesize);
+
         bw.write("Tree size(new): " + treesize + "\n");
         index.write(
                 treesize + "," + String.format("%.6f", (double) (System.nanoTime() - time) / 1000 / 1000) + ",");
@@ -160,7 +163,9 @@ public class CodeTree implements Serializable {
     }
 
     private void inclusionCheck(GraphCode impl, List<Graph> G) {
+        // root.addDescendantsLabels();
         for (Graph g : G) {
+            // g = g.shirinkNEC();
             if (g.id % 100000 == 0) {
                 // System.out.println();
             } else if (g.id % (G.size() / 2) == 0) {
@@ -168,7 +173,10 @@ public class CodeTree implements Serializable {
             } else if (g.id % (G.size() / 10) == 0) {
                 System.out.print(".");
             }
-            root.addIDtoTree(g, impl, g.id);
+            BitSet gLabels = g.labels_Set();
+            // root.addIDtoTree(g, impl, g.id);
+            root.addIDtoTree(g, impl, g.id, gLabels);
+
         }
     }
 
@@ -193,9 +201,9 @@ public class CodeTree implements Serializable {
 
     public BitSet subgraphSearch(Graph query, BufferedWriter bw, int size, String mode, String dataset,
             BufferedWriter bwout, BufferedWriter allbw, HashMap<Integer, ArrayList<String>> gMaps, List<Graph> G,
-            IndexNode root2)
+            IndexNode root2, int qsize)
             throws IOException, InterruptedException {
-        return root.subsearch(query, impl, size, bw, mode, dataset, bwout, allbw, gMaps, G, root2);
+        return root.subsearch(query, impl, size, bw, mode, dataset, bwout, allbw, gMaps, G, root2, "Query", qsize);
     }
 }
 

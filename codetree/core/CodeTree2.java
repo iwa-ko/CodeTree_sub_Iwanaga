@@ -54,13 +54,13 @@ public class CodeTree2 implements Serializable {
                 break;
 
             case "ppigo":
-                limDepth = 8;
+                limDepth = 6;
                 // rand = new Random(1);
                 break;
         }
 
         // int loop = 20;
-        int loop = 5;
+        int loop = 10;
 
         for (Graph g : G) {
             for (int i = 0; i < loop; i++) {
@@ -106,9 +106,11 @@ public class CodeTree2 implements Serializable {
         System.out.println("tree size (original): " + treesize);
         index.write(treesize + ",");
 
+        root2.addAdjLabels();
+
         List<Graph> leafGraphs = new ArrayList<>();
         root2.getLeafGraph(leafGraphs);
-        inclusionCheck2(impl, leafGraphs);
+        // inclusionCheck2(impl, leafGraphs);
         root2.removeTree();
         treesize = root2.size();
 
@@ -119,8 +121,6 @@ public class CodeTree2 implements Serializable {
 
         System.out.println(
                 "remove node time :" + String.format("%.6f", (double) (System.nanoTime() - time) / 1000 / 1000));
-
-        root2.addAdjLabels();
 
         start = System.nanoTime();
         System.out.println("グラフIDの計算中");
@@ -155,7 +155,7 @@ public class CodeTree2 implements Serializable {
             } else if (g.id % (G.size() / 10) == 0) {
                 System.out.print(".");
             }
-            root2.addIDtoTree2(g, impl, g.id);
+            root2.addIDtoTree2(g, impl, g.id, g.labels_Set());
             // root2.addIDtoTree(g, impl, g.id);
 
             root2.init_gtraverse_num();
@@ -172,7 +172,7 @@ public class CodeTree2 implements Serializable {
                 continue;
 
             idList.add(g.id);
-            root2.pruningEquivalentNodes(g, impl, g.id, idList, removeIDList);
+            root2.pruningEquivalentNodes2(g, impl, g.id, idList, removeIDList);
 
         }
     }

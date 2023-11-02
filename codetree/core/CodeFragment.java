@@ -7,5 +7,5 @@ public interface CodeFragment {
 
     public abstract boolean contains(CodeFragment other);
 
-    public abstract boolean contains1(CodeFragment other);
+    public abstract boolean contains_adj(CodeFragment other);
 }

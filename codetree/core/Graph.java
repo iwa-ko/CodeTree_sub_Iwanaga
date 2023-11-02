@@ -1,5 +1,7 @@
 package codetree.core;
 
+import java.io.BufferedWriter;
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
 import codetree.common.*;
@@ -125,6 +127,16 @@ public class Graph implements Serializable {
         return label.size();
     }
 
+    public BitSet labels_Set() {
+
+        BitSet labels = new BitSet();
+        for (int v = 0; v < order; ++v) {
+            labels.set(vertices[v]);
+        }
+
+        return labels;
+    }
+
     public Graph shirinkNEC() {
 
         int order = 0;
@@ -135,11 +147,12 @@ public class Graph implements Serializable {
             if (this.adjList[v].length > 1 || remove.contains(v))
                 continue;
 
-            if (this.adjList[v].length == 0) {
+            if (this.adjList[v].length == 0) {// 独立点の削除
                 remove.add(v);
                 continue;
             }
-            int adj = this.adjList[v][0];
+
+            int adj = this.adjList[v][0];// 親の頂点
 
             for (int u : this.adjList[adj]) {
                 if (this.adjList[u].length > 1 || u == v || vertices[u] != vertices[v])
@@ -286,6 +299,24 @@ public class Graph implements Serializable {
 
     public byte getVertexLabel(int index) {
         return vertices[index];
+    }
+
+    public void writeGraph2Gfu(BufferedWriter bw2) throws IOException {
+
+        bw2.write("#" + id + "\n");
+        bw2.write(order + "\n");
+        for (int i = 0; i < order; i++) {
+            bw2.write(vertices[i] + "\n");
+        }
+
+        bw2.write(size + "\n");
+        for (int i = 0; i < order; i++) {
+            for (int j = i; j < order; j++) {
+                if (edges[i][j] > 0) {
+                    bw2.write(i + " " + j + "\n");
+                }
+            }
+        }
     }
 
     // 幅優先探索ver

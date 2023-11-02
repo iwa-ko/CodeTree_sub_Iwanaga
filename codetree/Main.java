@@ -22,6 +22,7 @@ class Main {
     private static int searchID = 1;
     private static int datasetID = 0;
     private static int datasetSize = 0;
+    private static String newGfuFilename;
 
     public static void main(String[] args) throws InterruptedException {
         if (searchID < 1 && searchID > 2) {
@@ -54,9 +55,25 @@ class Main {
                     List<ArrayList<Pair<Integer, Graph>>> Q = new ArrayList<>();
                     final int querysize = 100;
                     final int minedge = 4;
-                    final int maxedge = 16;
+                    final int maxedge = 8;
 
                     List<Graph> G = SdfFileReader.readFile_gfu(Paths.get(gfuFilename));
+
+                    // int totalOrder = 0;
+                    // int newOrder = 0;
+                    // try (BufferedWriter bw2 = Files.newBufferedWriter(Paths.get(newGfuFilename)))
+                    // {
+
+                    // gfuFilename = newGfuFilename;
+                    // for (Graph g : G) {
+                    // totalOrder += g.order;
+                    // Graph gn = g.shirinkNEC();
+                    // writeGraph2Gfu(bw2, gn);
+                    // newOrder += gn.order;
+                    // G.set(g.id, gn);
+                    // }
+                    // }
+                    // System.out.println(totalOrder + ":" + newOrder);
 
                     for (int numOfEdge = minedge; numOfEdge <= maxedge; numOfEdge *= 2) {
                         ArrayList<Pair<Integer, Graph>> qset = new ArrayList<>();
@@ -119,11 +136,15 @@ class Main {
                                     + String.format("%.6f", (double) (System.nanoTime() - start) / 1000 / 1000)
                                     + ",");
 
+                            // if (true)
+                            // continue;
+
                             System.out.println("\ntree2");
                             CodeTree2 tree2 = new CodeTree2(graphCode, G, bw, dataset, allfind);
 
                             // G = null;
 
+                            // HashMap<Integer, ArrayList<String>> gMaps = makeGmaps(gfuFilename);
                             HashMap<Integer, ArrayList<String>> gMaps = makeGmaps(gfuFilename);
 
                             int index = minedge;
@@ -178,7 +199,7 @@ class Main {
                                         }
                                         BitSet result = tree.subgraphSearch(q.right, bw, datasetSize, mode,
                                                 dataset,
-                                                bwout, allbw, gMaps, G, tree2.root2);
+                                                bwout, allbw, gMaps, G, tree2.root2, q.right.size);
 
                                         bw2.write(
                                                 q.left.toString() + " " + result.cardinality() + "個"
@@ -294,42 +315,49 @@ class Main {
 
         if (datasetID == 1) {
             gfuFilename = "pdbs.gfu";
+            newGfuFilename = "pdbs2.gfu";
             resultFilename = "PDBS_result.txt";
             dataset = "pdbs";
             datasetSize = 600;
             System.out.println("PDBS");
         } else if (datasetID == 2) {
             gfuFilename = "pcms.gfu";
+            newGfuFilename = "pcms2.gfu";
             resultFilename = "PCM_result.txt";
             dataset = "pcms";
             datasetSize = 200;
             System.out.println("PCM");
         } else if (datasetID == 3) {
             gfuFilename = "ppigo.gfu";
+            newGfuFilename = "ppigo2.gfu";
             resultFilename = "PPI_result.txt";
             dataset = "ppigo";
             datasetSize = 20;
             System.out.println("PPI");
         } else if (datasetID == 4) {
             gfuFilename = "IMDB-MULTI.gfu";
+            newGfuFilename = "IMDB-MULTI2.gfu";
             resultFilename = "IMDB_result.txt";
             dataset = "IMDB-MULTI";
             datasetSize = 1500;
             System.out.println("IMDB");
         } else if (datasetID == 5) {
             gfuFilename = "REDDIT-MULTI-5K.gfu";
+            newGfuFilename = "REDDIT-MULTI-5K2.gfu";
             resultFilename = "REDDIT_result.txt";
             dataset = "REDDIT-MULTI-5K";
             datasetSize = 4999;
             System.out.println("REDDIT");
         } else if (datasetID == 6) {
             gfuFilename = "COLLAB.gfu";
+            newGfuFilename = "COLLAB2.gfu";
             resultFilename = "COLLAB_result.txt";
             dataset = "COLLAB";
             datasetSize = 5000;
             System.out.println("COLLAB");
         } else if (datasetID == 0) {
             gfuFilename = "AIDS.gfu";
+            newGfuFilename = "AIDS2.gfu";
             resultFilename = "AIDS_result.txt";
             dataset = "AIDS";
             datasetSize = 40000;
