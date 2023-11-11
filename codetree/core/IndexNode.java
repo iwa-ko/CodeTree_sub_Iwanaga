@@ -1,7 +1,6 @@
 package codetree.core;
 
 import java.io.*;
-import java.nio.file.*;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.nio.file.Files;
@@ -21,18 +20,17 @@ public class IndexNode implements Serializable {
     protected BitSet matchGraphIndicesBitSet;
     public HashSet<Byte> adjLabels;
     protected int nodeID;
-    protected BitSet descendantsLabels;
+    protected HashMap<Integer, Integer> orderMap;
 
-    // protected BitSet traverseCount1;
-    // protected BitSet traverseCount2;
     protected int g_traverse_num;
 
     protected int traverse_num = 0;
-    // protected int[] g_traverse_num;
     protected LinkedHashMap<Integer, int[]> mapping;
     protected LinkedHashMap<Integer, Integer> mapping2;
     // protected int qMapping;
     protected ArrayList<Integer> qMapping;
+    protected LinkedHashMap<Integer, BitSet> labelFiltering;
+    protected int nec;
 
     static BitSet In = new BitSet();
     static BitSet Can = new BitSet();
@@ -83,6 +81,12 @@ public class IndexNode implements Serializable {
     static long equals_search = 0;
     static int backtrack_count = 0;
     static long edgeFiltering_time = 0;
+    static int filtering_edge_num = 0;
+    static long nodeFiltering_time = 0;
+    static int c = 0;
+    static int query_per_nf_count = 0;
+    static int removeTotalSize = 0;
+    static int removeTotalGraphs = 0;
 
     static ArrayList<IndexNode> removeNode = new ArrayList<>();
 
@@ -103,13 +107,14 @@ public class IndexNode implements Serializable {
         g_traverse_num = 0;
         mapping = new LinkedHashMap<>();
 
-        // traverseCount1 = new BitSet(G_size);
-        // traverseCount2 = new BitSet(G_size);
+        labelFiltering = new LinkedHashMap<>();
+        orderMap = new LinkedHashMap<>();
+
         // mapping2 = new LinkedHashMap<>();
         // qMapping = -1;
         qMapping = new ArrayList<>();
-        descendantsLabels = new BitSet();
-
+        // descendantsLabels = new BitSet();
+        nec = 0;
     }
 
     int size() {
@@ -120,29 +125,22 @@ public class IndexNode implements Serializable {
         return s;
     }
 
-    static int c = 0;
-    static int query_per_nf_count = 0;
-
     void init_traverse() {
-        traverse_num = 0;
         // qMapping = -1;
+        if (traverse_num == 0 && depth > 0)
+            return;
+
         qMapping = new ArrayList<>(depth);
+
+        traverse_num = 0;
         for (IndexNode m : children) {
+
             m.init_traverse();
         }
     }
 
     void init_removeNode() {
         removeNode = new ArrayList<>();
-    }
-
-    void find_once_node() {
-        if (traverse_num == 1) {
-            // System.out.println(nodeID);
-        }
-        for (IndexNode m : children) {
-            m.find_once_node();
-        }
     }
 
     void addAdjLabels() {
@@ -154,25 +152,51 @@ public class IndexNode implements Serializable {
         }
     }
 
-    void addDescendantsLabels() {
-        // BitSet descendantsLabels = new BitSet();
+    void addPath_nec(List<CodeFragment> code, int graphIndex, boolean supergraphSearch) {
+        final int height = code.size();
+
+        if (this.nodeID == 0) {
+            nodeIDcount++;
+            nodeID = nodeIDcount;
+        }
+
+        if (supergraphSearch) {
+            ++count;
+            supNode = true;
+            if (height <= 0 && graphIndex != -1) {
+                matchGraphIndices.add(graphIndex);
+                return;
+            }
+
+        } else {
+            if (graphIndex != -1)
+                matchGraphIndicesBitSet.set(graphIndex, true);
+
+            int dep = -1;
+            for (IndexNode a = this; a != null; a = a.parent) {
+                dep++;
+            }
+            depth = dep;
+            if (height <= 0)
+                return;
+        }
+
+        CodeFragment car = code.get(0);
+        List<CodeFragment> cdr = code.subList(1, height);
 
         for (IndexNode m : children) {
-            // System.out.println(m.nodeID);
-            getDescendantsLabels(descendantsLabels);
-
-            m.addDescendantsLabels();
+            if (m.frag.equals_nec(car)) {
+                m.addPath_nec(cdr, graphIndex, supergraphSearch);
+                return;
+            }
         }
-    }
 
-    BitSet getDescendantsLabels(BitSet labels) {
-        // BitSet descendantsLabels = new BitSet();
-        for (IndexNode m : children) {
-            labels.set(m.frag.getVlabel());
-            labels = m.getDescendantsLabels(labels);
-        }
-        return labels;
+        IndexNode m = new IndexNode(this, car);
+        if (supergraphSearch)
+            m.supNode = true;
+        children.add(m);
 
+        m.addPath_nec(cdr, graphIndex, supergraphSearch);
     }
 
     void addPath(List<CodeFragment> code, int graphIndex, boolean supergraphSearch) {
@@ -268,7 +292,7 @@ public class IndexNode implements Serializable {
         }
     }
 
-    void find_once_node(int size, HashMap<Integer, HashSet<Integer>> filteringNodes) {
+    void find_nodeFiltering(int size, HashMap<Integer, HashSet<Integer>> filteringNodes, BitSet qLabels) {
         if (depth > 1 && traverse_num == 1) {
             for (int i : mapping.keySet()) {
 
@@ -281,17 +305,11 @@ public class IndexNode implements Serializable {
                         arrayList = new HashSet<>();
                     }
 
-                    // HashSet<Integer> noVF = new HashSet<>();
-                    // for (IndexNode m : children) {
-                    // if (m.traverse_num >= 1 && m.mapping.get(i) != null) {
-                    // noVF.add(m.mapping.get(i)[m.depth - 1]);
-                    // }
-                    // }
                     for (IndexNode m : children) {
                         if (m.traverse_num == 0 && m.mapping.get(i) != null) {
                             int target_node = m.mapping.get(i)[m.depth - 1];
-                            // if (noVF.contains(target_node))
-                            // continue;
+                            if (qLabels.get(m.frag.getVlabel()))
+                                continue;
                             // System.out.println("NF node:" + target_node);
                             // System.out.print("[");
                             // for (int j = 0; j < m.depth; j++) {
@@ -309,10 +327,16 @@ public class IndexNode implements Serializable {
 
         }
         for (IndexNode m : children) {
-            m.find_once_node(size, filteringNodes);
+            m.find_nodeFiltering(size, filteringNodes, qLabels);
         }
     }
 
+    // HashSet<Integer> noVF = new HashSet<>();
+    // for (IndexNode m : children) {
+    // if (m.traverse_num >= 1 && m.mapping.get(i) != null) {
+    // noVF.add(m.mapping.get(i)[m.depth - 1]);
+    // }
+    // }
     private void find_edgeFiltering(int order, int size,
             LinkedHashMap<Integer, List<Pair<Integer, Integer>>> edgeFiltering) {
         if (traverse_num == 1 && depth <= order - 1) {
@@ -329,19 +353,15 @@ public class IndexNode implements Serializable {
                         arrayList = new ArrayList<>();
                     }
 
-                    // HashSet<Integer> noVF = new HashSet<>();
-                    // for (IndexNode m : children) {
-                    // if (m.traverse_num >= 1 && m.mapping.get(i) != null) {
-                    // noVF.add(m.mapping.get(i)[m.depth - 1]);
-                    // }
-                    // }
                     for (IndexNode m : children) {
                         if (m.traverse_num == 0 && m.mapping.get(i) != null) {
-                            // if (m.mapping.get(i) == null)
-                            // continue;
 
                             int target_node = m.mapping.get(i)[m.depth - 1];
                             int target_node_pair = m.mapping.get(i)[m.depth - 2];
+
+                            // Graph g = G.get(i);
+                            // g.edges[target_node][target_node_pair] = 0;
+                            // g.edges[target_node_pair][target_node] = 0;
 
                             // if (noVF.contains(target_node))
                             // continue;
@@ -367,7 +387,66 @@ public class IndexNode implements Serializable {
         for (IndexNode m : children) {
             m.find_edgeFiltering(order, size, edgeFiltering);
         }
+    }
 
+    private void find_edgeFiltering(List<Graph> G, int order) {
+        if (depth > 0 && traverse_num == 0)
+            return;
+
+        if (traverse_num == 1 && depth <= order - 1) {
+            int mapsize = mapping.size();
+            int cansize = Can.cardinality();
+            if (mapsize <= cansize) {
+                for (int i : mapping.keySet()) {
+                    if (Can.get(i)) {// possibel node filtering
+
+                        Graph g = G.get(i);
+
+                        for (IndexNode m : children) {
+                            if (m.traverse_num == 0 && m.mapping.get(i) != null) {
+
+                                int target_node = m.mapping.get(i)[m.depth - 1];
+                                int target_node_pair = m.mapping.get(i)[m.depth - 2];
+
+                                if (g.vertices[target_node] == -1 || g.vertices[target_node_pair] == -1)
+                                    continue;
+                                filtering_edge_num++;
+
+                                g.edges[target_node][target_node_pair] = 0;
+                                g.edges[target_node_pair][target_node] = 0;
+                            }
+                        }
+                    }
+
+                }
+            } else {
+                for (int i = Can.nextSetBit(0); i != -1; i = Can
+                        .nextSetBit(++i)) {
+                    if (mapping.get(i) != null) {
+
+                        Graph g = G.get(i);
+
+                        for (IndexNode m : children) {
+                            if (m.traverse_num == 0 && m.mapping.get(i) != null) {
+
+                                int target_node = m.mapping.get(i)[m.depth - 1];
+                                int target_node_pair = m.mapping.get(i)[m.depth - 2];
+                                if (g.vertices[target_node] == -1 || g.vertices[target_node_pair] == -1)
+                                    continue;
+                                filtering_edge_num++;
+                                g.edges[target_node][target_node_pair] = 0;
+                                g.edges[target_node_pair][target_node] = 0;
+                            }
+                        }
+                    }
+
+                }
+
+            }
+        }
+        for (IndexNode m : children) {
+            m.find_edgeFiltering(G, order);
+        }
     }
 
     void printCodeFragment() {
@@ -378,118 +457,563 @@ public class IndexNode implements Serializable {
         System.out.println();
     }
 
-    static int removeTotalGraphs = 0;
+    void find_labelFiltering(HashMap<Integer, BitSet> filteringNodes) {
+
+        for (IndexNode m : children) {
+            if (m.traverse_num == 0) {
+                for (int trueIndex = Can.nextSetBit(0); trueIndex != -1; trueIndex = Can
+                        .nextSetBit(++trueIndex)) {
+                    if (m.labelFiltering.get(trueIndex) != null) {
+                        // for (int i : m.labelFiltering.keySet()) {
+                        // if (Can.get(i)) {
+                        if (filteringNodes.get(trueIndex) == null)
+                            filteringNodes.put(trueIndex, new BitSet());
+
+                        filteringNodes.get(trueIndex).or(m.labelFiltering.get(trueIndex));
+
+                    }
+                }
+
+            }
+        }
+    }
+
+    void find_labelFiltering(List<Graph> G) {
+
+        for (IndexNode m : children) {
+            if (m.traverse_num == 0) {
+                int mapsize = m.labelFiltering.size();
+                int cansize = Can.cardinality();
+                if (cansize <= mapsize) {
+                    for (int trueIndex = Can.nextSetBit(0); trueIndex != -1; trueIndex = Can
+                            .nextSetBit(++trueIndex)) {
+                        if (m.labelFiltering.get(trueIndex) != null) {
+                            Graph g = G.get(trueIndex);
+                            for (int v = m.labelFiltering.get(trueIndex).nextSetBit(0); v != -1; v = m.labelFiltering
+                                    .get(trueIndex)
+                                    .nextSetBit(++v)) {
+                                query_per_nf_count++;
+
+                                for (int u : g.adjList[v]) {
+                                    g.edges[u][v] = 0;
+                                    g.edges[v][u] = 0;
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    for (int trueIndex : m.labelFiltering.keySet()) {
+                        if (Can.get(trueIndex)) {
+                            Graph g = G.get(trueIndex);
+                            for (int v = m.labelFiltering.get(trueIndex).nextSetBit(0); v != -1; v = m.labelFiltering
+                                    .get(trueIndex)
+                                    .nextSetBit(++v)) {
+                                query_per_nf_count++;
+                                for (int u : g.adjList[v]) {
+                                    g.edges[u][v] = 0;
+                                    g.edges[v][u] = 0;
+                                }
+                            }
+
+                        }
+                    }
+                }
+
+            }
+        }
+    }
+
+    void find_labelFiltering2(List<Graph> G) {
+
+        for (IndexNode m : children) {
+            if (m.traverse_num == 0) {
+                int mapsize = m.labelFiltering.size();
+                int cansize = Can.cardinality();
+                if (cansize <= mapsize) {
+                    for (int trueIndex = Can.nextSetBit(0); trueIndex != -1; trueIndex = Can
+                            .nextSetBit(++trueIndex)) {
+                        if (m.labelFiltering.get(trueIndex) != null) {
+                            Graph g = G.get(trueIndex);
+                            for (int v = m.labelFiltering.get(trueIndex).nextSetBit(0); v != -1; v = m.labelFiltering
+                                    .get(trueIndex)
+                                    .nextSetBit(++v)) {
+                                query_per_nf_count++;
+                                g.vertices[v] = -1;
+
+                            }
+                        }
+                    }
+                } else {
+                    for (int trueIndex : m.labelFiltering.keySet()) {
+                        if (Can.get(trueIndex)) {
+                            Graph g = G.get(trueIndex);
+                            for (int v = m.labelFiltering.get(trueIndex).nextSetBit(0); v != -1; v = m.labelFiltering
+                                    .get(trueIndex)
+                                    .nextSetBit(++v)) {
+                                query_per_nf_count++;
+                                g.vertices[v] = -1;
+
+                            }
+
+                        }
+                    }
+                }
+
+            }
+        }
+    }
+
+    static long checkOrderMapTime = 0;
+    static long checkOrder = 0;
 
     BitSet subsearch(Graph q, GraphCode impl, int size, BufferedWriter bw, String mode, String dataset,
-            BufferedWriter bw_data, BufferedWriter allbw, HashMap<Integer, ArrayList<String>> gMaps, List<Graph> G,
+            BufferedWriter bw_data, BufferedWriter allbw, List<Graph> G,
             IndexNode root2, String directory, int qsize)
             throws IOException, InterruptedException {
 
-        // String qFileName = String.format("Query2/%s/%s/%d/q%d.gfu",
-        // dataset, mode, q.size, q.id);
+        List<Graph> D = new ArrayList<>(G.size());
 
-        // directory = "Query2";
-        // String directories = String.format("Query2/%s/%s/%d",
-        // dataset, mode, q.size);
+        for (Graph g : G) {
 
-        // Path target = Paths.get(directories);
-
-        // // ディレクトリを作成
-        // try {
-        // Files.createDirectories(target);
-        // } catch (IOException e) {
-        // System.out.println("ディレクトリの作成に失敗しました。");
-        // e.printStackTrace();
-        // }
-        // try (BufferedWriter bw2 = Files.newBufferedWriter(Paths.get(qFileName))) {
-        // q = q.shirinkNEC();
-        // q.writeGraph2Gfu(bw2);
-        // }
+            D.add(g.clone());
+        }
 
         long start = System.nanoTime();
 
         init_Bitset(q, size);
+        root2.init_traverse();
 
-        // if (q.id != 27)
-        // return new BitSet(size);
+        long test = System.nanoTime();
+        // root2.checkOrderMap(q);
+        checkOrderMapTime += System.nanoTime() - test;
 
-        // if (q.size != 8)
-        // return new BitSet(size);
+        // BitSet qLabels = q.labels_Set();
 
         List<Pair<IndexNode, SearchInfo>> infoList = impl.beginSearch(q, this);
         for (Pair<IndexNode, SearchInfo> info : infoList) {
             info.left.subsearch(q, info.right, impl);
         }
-
-        long chech_time = System.nanoTime();
-        contains_search += chech_time - start;
-
-        infoList = impl.beginSearch(q, root2);
-        for (Pair<IndexNode, SearchInfo> info : infoList) {
-            info.left.subsearch_contain(q, info.right, impl);
-            // info.left.subsearch_super(q, info.right, impl);
-            // info.left.subsearch2(q, info.right, impl);// addID equalはだめ
-        }
-        equals_search += System.nanoTime() - chech_time;
-
-        infoList = null;
-
-        a_fil_count = size - Can.cardinality();
-        fil_count += a_fil_count;
-        in_count += In.cardinality();
-
         result.or(In);
         Can.xor(In);
 
-        doukeicount += Can.cardinality();
-        a_filterTime = System.nanoTime() - start;
-        search_time += a_filterTime;// filtering time
+        if (!Can.isEmpty()) {
+            long chech_time = System.nanoTime();
+            contains_search += chech_time - start;
 
-        start = System.nanoTime();
+            infoList = impl.beginSearch(q, root2);
+            for (Pair<IndexNode, SearchInfo> info : infoList) {
+                info.left.subsearch_contain(q, info.right, impl);
+            }
+            equals_search += System.nanoTime() - chech_time;
 
-        // LinkedHashMap<Integer, List<Pair<Integer, Integer>>> edgeFiltering = new
-        // LinkedHashMap<>();
-        // root2.find_edgeFiltering(q.order, size, edgeFiltering);
+            infoList = null;
 
-        // edgeFiltering_time += System.nanoTime() - start;
+            a_fil_count = size - Can.cardinality();
+            fil_count += a_fil_count;
+            in_count += In.cardinality();
 
-        // write_file_for_Ver(gMaps, edgeFiltering, G);
+            doukeicount += Can.cardinality();
+            a_filterTime = System.nanoTime() - start;
+            search_time += a_filterTime;// filtering time
 
-        // write_file_for_Ver_new(gMaps, edgeFiltering, G);
+            start = System.nanoTime();
 
-        // System.out.println("削除対象グラフ" + q.id + ":" + filteringNode2.keySet().size());
-        // System.out.println("削除できた辺数" + q.id + ":" + removeTotalSize);
+            // LinkedHashMap<Integer, BitSet> labelFiltering = new LinkedHashMap<>();
+            // root2.find_labelFiltering(labelFiltering);
+            // root2.find_labelFiltering(D);
+            root2.find_labelFiltering2(D);
+            // for (Integer value : labelFiltering.keySet()) {
+            // query_per_nf_count += labelFiltering.get(value).size();
+            // }
 
-        LinkedHashMap<Integer, HashSet<Integer>> filteringNodes = new LinkedHashMap<>();
-        int nf_count = 0;
-        // System.out.println(q.id);
-        root2.find_once_node(size, filteringNodes);
-        for (Integer value : filteringNodes.keySet()) {
-            nf_count += filteringNodes.get(value).size();
-            // System.out.println(value + ":" + filteringNodes.get(value).size());
+            nodeFiltering_time += System.nanoTime() - start;
+
+            start = System.nanoTime();
+
+            // LinkedHashMap<Integer, List<Pair<Integer, Integer>>> edgeFiltering = new
+            // LinkedHashMap<>();
+            // root2.find_edgeFiltering(q.order, size, edgeFiltering);
+            root2.find_edgeFiltering(D, q.order);
+
+            edgeFiltering_time += System.nanoTime() - start;
+
+            // write_file_for_Ver(gMaps, labelFiltering, edgeFiltering, G);
+
+            // write_file_for_Ver(D);
+            write_file_for_Ver2(D);
+
+            // LinkedHashMap<Integer, HashSet<Integer>> labelFiltering = new
+            // LinkedHashMap<>();
+            // root2.find_labelFiltering(labelFiltering);
+            // for (Integer value : labelFiltering.keySet()) {
+            // query_per_nf_count += labelFiltering.get(value).size();
+            // }
+
+            // nodeFiltering_time += System.nanoTime() - start;
+
+            // write_file_for_Ver(gMaps, labelFiltering, edgeFiltering, G);
+
+            // write_file_for_Ver(gMaps);
+
+            verification_VEQ(directory, dataset, mode, q, qsize);
+        } else {
+            infoList = null;
+
+            a_fil_count = size - Can.cardinality();
+            fil_count += a_fil_count;
+            in_count += In.cardinality();
+
+            doukeicount += Can.cardinality();
+            a_filterTime = System.nanoTime() - start;
+            search_time += a_filterTime;// filtering time
+
+            nonfail++;
+
+            SPper_q = (double) In.cardinality() / result.cardinality();
+
+            FPre = 1;
+            FPper_q = 0;
+
+            totoal_kai += result.cardinality();
+            FP += FPre;
+            FP2 += FPper_q;
+            SP += SPper_q;
+
         }
-        query_per_nf_count += nf_count;
 
-        write_file_for_Ver(gMaps, filteringNodes, G);
+        // write_file_for_Ver(gMaps);
 
-        verification_VEQ(directory, dataset, mode, q, qsize);
+        // LinkedHashMap<Integer, HashSet<Integer>> NodeFiltering = new
+        // LinkedHashMap<>();
+        // int nf_count = 0;
+        // // System.out.println(q.id);
+        // root2.find_nodeFiltering(size, NodeFiltering, qLabels);
+        // for (Integer value : NodeFiltering.keySet()) {
+        // nf_count += NodeFiltering.get(value).size();
+        // // System.out.println(value + ":" + filteringNodes.get(value).size());
+        // }
+        // query_per_nf_count += nf_count;
+
+        // write_file_for_Ver(gMaps, NodeFiltering, G);
 
         write_file_indiv(q, bw_data, size);
 
-        root2.init_traverse();
-
         if (q.id == 99) {
-            // System.out.println("\nNode Filtering Graph: " + nfg_count);
-            System.out.println("\nNode Filtering num: " + query_per_nf_count);
             // System.out.println("\n候補グラフ数" + doukeicount);
-            System.out.println("辺を削除できたグラフ数" + removeTotalGraphs);
-            System.out.println("削除できた辺数" + removeTotalSize);
+            // System.out.println("何かを削除できたグラフ数" + removeTotalGraphs);
+            System.out.println("削除できた頂点数/q:" + (double) query_per_nf_count / nonfail);
+            // System.out.println("\nclone time[s]:" + (double) clone_time / 1000 / 1000 /
+            // 1000);
+            // System.out.println("checkOrderTime[ms]:" + (double) checkOrderMapTime / 1000
+            // / 1000 / 100);
+            // System.out.println("g<q num:" + checkOrder);
+            // System.out.println("t num:" + t);
+            System.out.println("削除できた辺数/q:" + (double) filtering_edge_num / nonfail);
+            // System.out.println("削除できた総辺数:" + removeTotalSize);
+            checkOrderMapTime = 0;
+            checkOrder = 0;
 
             write_file(allbw, bw, size);
             init_param();
+            clone_time = 0;
+            removeTotalGraphs = 0;
             edgeFiltering_time = 0;
+            filtering_edge_num = 0;
+            removeTotalSize = 0;
         }
         return result;
+    }
+
+    private void checkOrderMap(Graph q) {
+        for (int o : orderMap.keySet()) {
+            if (!Can.get(o))
+                continue;
+            if (orderMap.get(o) < q.order) {
+                Can.set(o, false);
+                checkOrder++;
+            }
+        }
+    }
+
+    static int t = 0;
+
+    private void write_file_for_Ver2(List<Graph> D) {
+        long time = System.nanoTime();
+        try (BufferedWriter bw2 = Files.newBufferedWriter(out)) {
+
+            for (int trueIndex = Can.nextSetBit(0); trueIndex != -1; trueIndex = Can
+                    .nextSetBit(++trueIndex)) {
+
+                Graph g = D.get(trueIndex);
+                int newSize = 0;
+                int newOrder = 0;
+                int[] map = new int[g.order];
+
+                // for (int v = 0; v < g.order; v++) {
+                // if (g.vertices[v] == -1)
+                // continue;
+                // map[newOrder++] = v;
+                // }
+
+                // if (newOrder == 0) {
+                // continue;
+                // }
+
+                // bw2.write("#" + g.id + "\n");
+                // bw2.write(newOrder + "\n");
+                for (int v = 0; v < g.order; ++v) {
+                    boolean allZeros = true; // 一行が全て0かどうかを示すフラグ
+                    if (g.vertices[v] == -1)
+                        continue;
+                    for (int u = 0; u < g.order; ++u) {
+                        if (g.vertices[u] == -1)
+                            continue;
+                        if (g.edges[v][u] > 0) {
+                            ++newSize;
+                            allZeros = false; // 一行に0以外の要素がある場合、フラグをfalseに設定
+                            // break;
+                        }
+                    }
+                    if (!allZeros) {
+                        map[newOrder++] = v;
+                    }
+                }
+                newSize /= 2;
+
+                if (newOrder == 0 || newSize == 0) {
+                    continue;
+                }
+                t++;
+                can.add(trueIndex);
+
+                // List<String> verticeList = new ArrayList<>();
+                String line = "#" + g.id + "\n";
+                bw2.write(line);
+                // verticeList.add(line);
+                line = newOrder + "\n";
+                bw2.write(line);
+                // verticeList.add(line);
+
+                for (int i = 0; i < newOrder; i++) {
+                    // line = g.vertices[map[i]] + "\n";
+                    // verticeList.add(line);
+                    bw2.write(g.vertices[map[i]] + "\n");
+                }
+
+                bw2.write(newSize + "\n");
+
+                for (int i = 0; i < newOrder; i++) {
+                    for (int j = i; j < newOrder; j++) {
+                        if (g.edges[map[i]][map[j]] > 0) {
+                            bw2.write(i + " " + j + "\n");
+                            // newSize++;
+                            // String data = i + " " + j + "\n";
+                            // edgeList.add(data);
+                        }
+                    }
+                }
+
+                // String size = newSize + "\n";
+
+                // bw2.write(newSize + "\n");
+                removeTotalSize += g.size - newSize;
+                if (g.size - newSize != 0)
+                    removeTotalGraphs++;
+
+                // for (String data : verticeList) {
+                // bw2.write(data);
+                // }
+                // bw2.write(size);
+                // for (String data : edgeList) {
+                // bw2.write(data);
+                // }
+
+            }
+            bw2.close();
+        } catch (IOException e) {
+            System.exit(1);
+        }
+        write_time += System.nanoTime() - time;
+    }
+
+    private void write_file_for_Ver(List<Graph> D) {
+        long time = System.nanoTime();
+        try (BufferedWriter bw2 = Files.newBufferedWriter(out)) {
+
+            for (int trueIndex = Can.nextSetBit(0); trueIndex != -1; trueIndex = Can
+                    .nextSetBit(++trueIndex)) {
+
+                Graph g = D.get(trueIndex);
+                int newSize = 0;
+                int newOrder = 0;
+                int[] map = new int[g.order];
+
+                for (int v = 0; v < g.order; ++v) {
+                    boolean allZeros = true; // 一行が全て0かどうかを示すフラグ
+                    for (int u = 0; u < g.order; ++u) {
+                        if (g.edges[v][u] > 0) {
+                            ++newSize;
+                            allZeros = false; // 一行に0以外の要素がある場合、フラグをfalseに設定
+                        }
+                    }
+                    if (!allZeros) {
+                        map[newOrder++] = v;
+                    }
+                }
+                newSize /= 2;
+
+                removeTotalSize += g.size - newSize;
+                if (g.size - newSize != 0)
+                    removeTotalGraphs++;
+
+                if (newOrder == 0 || newSize == 0) {
+                    continue;
+                }
+                t++;
+                can.add(trueIndex);
+
+                bw2.write("#" + g.id + "\n");
+                bw2.write(newOrder + "\n");
+                for (int i = 0; i < newOrder; i++) {
+                    bw2.write(g.vertices[map[i]] + "\n");
+                }
+
+                bw2.write(newSize + "\n");
+                for (int i = 0; i < newOrder; i++) {
+                    for (int j = i; j < newOrder; j++) {
+                        if (g.edges[map[i]][map[j]] > 0) {
+                            bw2.write(i + " " + j + "\n");
+                        }
+                    }
+                }
+            }
+
+            bw2.close();
+        } catch (IOException e) {
+            System.exit(1);
+        }
+        write_time += System.nanoTime() - time;
+    }
+
+    private void write_file_for_Ver(HashMap<Integer, ArrayList<String>> gMaps) {
+        long time = System.nanoTime();
+        try (BufferedWriter bw2 = Files.newBufferedWriter(out)) {
+
+            for (int trueIndex = Can.nextSetBit(0); trueIndex != -1; trueIndex = Can
+                    .nextSetBit(++trueIndex)) {
+
+                can.add(trueIndex);
+                for (String line : gMaps.get(trueIndex)) {
+                    bw2.write(line + "\n");
+                }
+            }
+
+            bw2.close();
+        } catch (IOException e) {
+            System.exit(1);
+        }
+        write_time += System.nanoTime() - time;
+    }
+
+    static long clone_time = 0;
+
+    private void write_file_for_Ver(HashMap<Integer, ArrayList<String>> gMaps,
+            LinkedHashMap<Integer, BitSet> labelFiltering,
+            LinkedHashMap<Integer, List<Pair<Integer, Integer>>> edgeFiltering, List<Graph> G) {
+
+        long time = System.nanoTime();
+        try (BufferedWriter bw2 = Files.newBufferedWriter(out)) {
+
+            for (int trueIndex = Can.nextSetBit(0); trueIndex != -1; trueIndex = Can
+                    .nextSetBit(++trueIndex)) {
+                // a graph be able to be possibl filtering node
+                if (edgeFiltering.get(trueIndex) != null || labelFiltering.get(trueIndex) != null) {
+
+                    // if (edgeFiltering.get(trueIndex) != null &&
+                    // edgeFiltering.get(trueIndex).size() > 0) {
+                    Graph g = G.get(trueIndex);
+                    int newOrder = 0;
+                    int newSize = 0;
+                    int[] map = new int[g.order];
+                    byte[][] newEdges = new byte[g.order][];
+                    long s = System.nanoTime();
+                    for (int i = 0; i < g.order; i++) {
+                        newEdges[i] = g.edges[i].clone(); // オブジェクトがクローン可能な場合
+                    }
+                    clone_time += System.nanoTime() - s;
+
+                    if (edgeFiltering.get(trueIndex) != null) {
+                        for (Pair<Integer, Integer> p : edgeFiltering.get(trueIndex)) {
+                            if (newEdges[p.left][p.right] == 1)
+                                filtering_edge_num++;
+                            newEdges[p.left][p.right] = 0;
+                            newEdges[p.right][p.left] = 0;
+                        }
+                    }
+
+                    if (labelFiltering.get(trueIndex) != null) {
+                        // for (int v : labelFiltering.get(trueIndex)) {
+                        for (int v = labelFiltering.get(trueIndex).nextSetBit(0); v != -1; v = labelFiltering
+                                .get(trueIndex)
+                                .nextSetBit(++v)) {
+                            for (int u : g.adjList[v]) {
+                                newEdges[u][v] = 0;
+                                newEdges[v][u] = 0;
+                            }
+                        }
+                    }
+
+                    for (int v = 0; v < g.order; ++v) {
+                        boolean allZeros = true; // 一行が全て0かどうかを示すフラグ
+                        for (int u = 0; u < g.order; ++u) {
+                            if (newEdges[v][u] > 0) {
+                                ++newSize;
+                                allZeros = false; // 一行に0以外の要素がある場合、フラグをfalseに設定
+                            }
+                        }
+                        if (!allZeros) {
+                            map[newOrder++] = v;
+                        }
+                    }
+                    newSize /= 2;
+
+                    removeTotalSize += g.size - newSize;
+                    if (g.size - newSize != 0)
+                        removeTotalGraphs++;
+
+                    if (newOrder == 0 || newSize == 0) {
+                        continue;
+                    }
+                    can.add(trueIndex);
+
+                    bw2.write("#" + g.id + "\n");
+                    bw2.write(newOrder + "\n");
+                    for (int i = 0; i < newOrder; i++) {
+                        bw2.write(g.vertices[map[i]] + "\n");
+                    }
+
+                    bw2.write(newSize + "\n");
+                    for (int i = 0; i < newOrder; i++) {
+                        for (int j = i; j < newOrder; j++) {
+                            if (newEdges[map[i]][map[j]] > 0) {
+                                bw2.write(i + " " + j + "\n");
+                            }
+                        }
+                    }
+                } else {
+                    can.add(trueIndex);
+                    for (String line : gMaps.get(trueIndex)) {
+                        bw2.write(line + "\n");
+                    }
+                }
+            }
+
+            bw2.close();
+        } catch (IOException e) {
+            System.exit(1);
+        }
+        write_time += System.nanoTime() - time;
+
     }
 
     private void subsearch_contain(Graph q, SearchInfo info, GraphCode impl) {
@@ -502,14 +1026,15 @@ public class IndexNode implements Serializable {
         // } else if (traverse_num > 1) {
         // qMapping = -2;
         // }
-        if (traverse_num == 1) {
-            int[] vertexIDs = info.getVertexIDs();
-            for (int v : vertexIDs) {
-                qMapping.add(v);
-            }
-        } else if (traverse_num > 1) {
-            qMapping = null;
-        }
+
+        // if (traverse_num == 1) {
+        // int[] vertexIDs = info.getVertexIDs();
+        // for (int v : vertexIDs) {
+        // qMapping.add(v);
+        // }
+        // } else if (traverse_num > 1) {
+        // qMapping = null;
+        // }
 
         if (children.size() == 0) {
             return;
@@ -519,10 +1044,7 @@ public class IndexNode implements Serializable {
 
         for (IndexNode m : children) {
             for (Pair<CodeFragment, SearchInfo> frag : nextFrags) {
-                // if (frag.left.equals(m.frag)) {
-                // if (frag.left.contains(m.frag)) {
                 if (frag.left.contains_adj(m.frag)) {
-                    // if (m.frag.contains(frag.left)) {// 逆contain! 恐らくこちらが正しい いや確定
                     m.subsearch_contain(q, frag.right, impl);
                 }
             }
@@ -565,117 +1087,6 @@ public class IndexNode implements Serializable {
         }
     }
 
-    static int removeTotalSize = 0;
-
-    private void write_file_for_Ver_new(HashMap<Integer, ArrayList<String>> gMaps,
-            LinkedHashMap<Integer, List<Pair<Integer, Integer>>> edgeFiltering, List<Graph> G) {
-
-        long time = System.nanoTime();
-        // try (BufferedWriter bw2 = Files.newBufferedWriter(out)) {
-        try (
-                OutputStream os = Files.newOutputStream(out);
-                BufferedOutputStream bos = new BufferedOutputStream(os);) {
-
-            for (int trueIndex = Can.nextSetBit(0); trueIndex != -1; trueIndex = Can
-                    .nextSetBit(++trueIndex)) {
-                // if (trueIndex != 23962)
-                // continue;
-
-                // can.add(trueIndex);
-                // a graph be able to be possibl filtering node
-                if (edgeFiltering.get(trueIndex) != null && edgeFiltering.get(trueIndex).size() > 0) {
-                    // System.out.println(filteringNodes.get(trueIndex).size());
-                    // if (trueIndex != 959)
-                    // continue;
-                    nfg_count++;
-                    Graph g = G.get(trueIndex);
-                    int newOrder = 0;
-                    int newSize = 0;
-                    int[] map = new int[g.order];
-                    byte[][] newEdges = new byte[g.order][];
-                    // System.arraycopy(g.edges, 0, newEdges, 0, g.order);
-                    for (int i = 0; i < g.order; i++) {
-                        newEdges[i] = g.edges[i].clone(); // オブジェクトがクローン可能な場合
-                    }
-
-                    for (Pair<Integer, Integer> p : edgeFiltering.get(trueIndex)) {
-                        newEdges[p.left][p.right] = 0;
-                        newEdges[p.right][p.left] = 0;
-                    }
-
-                    for (int v = 0; v < g.order; ++v) {
-                        boolean allZeros = true; // 一行が全て0かどうかを示すフラグ
-                        // if (!filteringNodes.get(trueIndex).contains(v)) {
-                        // map[newOrder++] = v;
-                        // continue;
-                        // }
-                        for (int u = 0; u < g.order; ++u) {
-                            if (newEdges[v][u] > 0) {
-                                ++newSize;
-                                allZeros = false; // 一行に0以外の要素がある場合、フラグをfalseに設定
-                            }
-                        }
-                        if (!allZeros) {
-                            map[newOrder++] = v;
-                        }
-                    }
-                    newSize /= 2;
-
-                    removeTotalSize += g.size - newSize;
-                    if (g.size - newSize != 0)
-                        removeTotalGraphs++;
-
-                    if (newOrder == 0 || newSize == 0) {
-                        continue;
-                    }
-
-                    can.add(trueIndex);
-
-                    String line = "#" + g.id + "\n";
-                    byte[] bytes = line.getBytes();
-                    bos.write(bytes); // バイトデータをファイルに書き込み
-
-                    // bw2.write("#" + g.id + "\n");
-                    line = newOrder + "\n";
-                    bytes = line.getBytes();
-                    bos.write(bytes); // バイトデータをファイルに書き込み
-
-                    for (int i = 0; i < newOrder; i++) {
-                        line = g.vertices[map[i]] + "\n";
-                        bytes = line.getBytes();
-                        bos.write(bytes); // バイトデータをファイルに書き込み
-                    }
-
-                    line = newSize + "\n";
-                    bytes = line.getBytes();
-                    bos.write(bytes); // バイトデータをファイルに書き込み
-                    for (int i = 0; i < newOrder; i++) {
-                        for (int j = i; j < newOrder; j++) {
-                            if (newEdges[map[i]][map[j]] > 0) {
-                                line = i + " " + j + "\n";
-                                bytes = line.getBytes();
-                                bos.write(bytes); // バイトデータをファイルに書き込み
-                            }
-                        }
-                    }
-                } else {
-                    can.add(trueIndex);
-                    byte[] bytes = new byte[1024];
-                    for (String line : gMaps.get(trueIndex)) {
-                        bytes = line.getBytes();
-                        bos.write(bytes); // バイトデータをファイルに書き込み
-                        // bw2.write(line + "\n");
-                    }
-                }
-            }
-
-        } catch (IOException e) {
-            System.exit(1);
-        }
-        write_time += System.nanoTime() - time;
-
-    }
-
     private void write_file_for_Ver(HashMap<Integer, ArrayList<String>> gMaps,
             LinkedHashMap<Integer, List<Pair<Integer, Integer>>> edgeFiltering, List<Graph> G) {
 
@@ -693,7 +1104,6 @@ public class IndexNode implements Serializable {
                     // System.out.println(filteringNodes.get(trueIndex).size());
                     // if (trueIndex != 959)
                     // continue;
-                    nfg_count++;
                     Graph g = G.get(trueIndex);
                     int newOrder = 0;
                     int newSize = 0;
@@ -767,8 +1177,6 @@ public class IndexNode implements Serializable {
 
     }
 
-    int nfg_count = 0;
-
     private void write_file_for_Ver(HashMap<Integer, ArrayList<String>> gMaps,
             HashMap<Integer, HashSet<Integer>> filteringNodes, List<Graph> G) {
 
@@ -786,7 +1194,6 @@ public class IndexNode implements Serializable {
                     // System.out.println(filteringNodes.get(trueIndex).size());
                     // if (trueIndex != 76)
                     // continue;
-                    nfg_count++;
                     Graph g = G.get(trueIndex);
                     int newOrder = 0;
                     int newSize = 0;
@@ -862,7 +1269,6 @@ public class IndexNode implements Serializable {
         }
         if (id == 39999) {
             System.out.println(traverse_cou);
-            int a = 0;
         }
 
     }
@@ -890,9 +1296,6 @@ public class IndexNode implements Serializable {
             return;
         }
 
-        // if (backtrackJudge(g, id)) { //62926320 depth5
-        // return;
-        // }
         if (backtrackJudge(g, id)) {
             return;
         }
@@ -900,13 +1303,6 @@ public class IndexNode implements Serializable {
         if (getNoTraversNode(g, id, gLabels))
             return;
 
-        // BitSet labels = getNoTraversNode(g, id, new BitSet());
-        // if (containsAll(gLabels, labels))// 45055890
-        // {
-        // // System.out.println(labels.toString());
-        // // System.out.println(gLabels.toString());
-        // return;
-        // }
         List<Pair<CodeFragment, SearchInfo>> nextFrags = impl.enumerateFollowableFragments(g, info, adjLabels);
 
         for (IndexNode m : children) {
@@ -918,17 +1314,6 @@ public class IndexNode implements Serializable {
         }
     }
 
-    // private BitSet getNoTraversNode(Graph g, int id, BitSet labels) {
-    // for (IndexNode m : children) {
-    // if (!m.matchGraphIndicesBitSet.get(id)) {
-    // labels.set(m.frag.getVlabel());
-    // }
-    // if (m.depth <= g.order) {
-    // labels = m.getNoTraversNode(g, id, labels);
-    // }
-    // }
-    // return labels;
-    // }
     private boolean getNoTraversNode(Graph g, int id, BitSet glabels) {
         for (IndexNode m : children) {
             if (!m.matchGraphIndicesBitSet.get(id)) {
@@ -944,19 +1329,8 @@ public class IndexNode implements Serializable {
         return true;
     }
 
-    // there are no descendants node because those have labels g has not
-    private boolean containsAll(BitSet gLabels, BitSet labels) {
-
-        for (int trueIndex = labels.nextSetBit(0); trueIndex != -1; trueIndex = labels
-                .nextSetBit(++trueIndex)) {
-            if (gLabels.get(trueIndex)) {
-                return false;
-            }
-        }
-        return true;// 一度もたどっていないノードが全てGにないラベルであればバックトラック
-    }
-
     void addIDtoTree2(Graph g, GraphCode impl, int id, BitSet glabels) {
+        orderMap.put(g.id, g.order);
         List<Pair<IndexNode, SearchInfo>> infoList = impl.beginSearch(g, this);
         for (Pair<IndexNode, SearchInfo> info : infoList) {
             info.left.addIDtoTree2(g, info.right, impl, id, glabels);
@@ -981,10 +1355,14 @@ public class IndexNode implements Serializable {
         g_traverse_num++;
         matchGraphIndicesBitSet.set(id, true);
         traverse_cou2++;
-
-        if (g_traverse_num == 1) {
-            int[] vertexIDs = info.getVertexIDs();
-            mapping.put(id, vertexIDs);
+        if (depth == 1) {
+            if (labelFiltering.get(id) == null) {
+                BitSet ids = new BitSet(g.order);
+                labelFiltering.put(id, ids);
+            }
+            labelFiltering.get(id).set(info.getVertexIDs()[0]);
+        } else if (g_traverse_num == 1) {
+            mapping.put(id, info.getVertexIDs());
         } else if (g_traverse_num == 2) {
             // int[] vertexIDs = info.getVertexIDs();
             // if (chech_addMapping(id, vertexIDs)) {
@@ -1013,13 +1391,6 @@ public class IndexNode implements Serializable {
         }
     }
 
-    // private boolean chech_addMapping(int id, int[] vertexIDs) {
-    // for(int map:this.mapping.get(id)){
-
-    // }
-    // return false;
-    // }
-
     private boolean backtrackJudge(Graph g, BitSet glabels) {
         for (IndexNode m : children) {
             if (m.g_traverse_num < 2) {
@@ -1035,20 +1406,6 @@ public class IndexNode implements Serializable {
         }
         return true;
     }
-
-    // private boolean backtrackJudge2(Graph g, int id) {
-    // for (IndexNode m : children) {
-    // if (!m.traverseCount1.get(id) && !m.traverseCount2.get(id)) {
-    // // if (!m.matchGraphIndicesBitSet.get(id)) {
-    // return false;
-    // }
-    // if (m.depth <= g.order) {
-    // if (!m.backtrackJudge2(g, id))
-    // return false;
-    // }
-    // }
-    // return true;
-    // }
 
     private boolean backtrackJudge(Graph g, int id) {
         for (IndexNode m : children) {
@@ -1201,7 +1558,6 @@ public class IndexNode implements Serializable {
             for (int j = 0; j < size; j++)
                 U.flip(j);
         }
-        // Ex = (BitSet) U.clone();
         Can = (BitSet) U.clone();
     }
 
@@ -1269,26 +1625,8 @@ public class IndexNode implements Serializable {
                             (Can.cardinality());
                 }
 
-                // if (size != result.cardinality()) {
-                // // FPre = (double) (size - Ex.cardinality())
-                // // / (size - result.cardinality());
-                // // System.out.println(Can.cardinality());
-                // // System.out.println(result.cardinality());
-                // FPre = (double) result.cardinality() / Can.cardinality();
-
-                // // FPre = (double) (Can.cardinality())
-                // // // FPre = (double) (size - Can.cardinality() - result.cardinality())
-                // // / (size - result.cardinality());
                 if (0 != Can.cardinality()) {
-                    // FPre = (double) (size - Ex.cardinality())
-                    // / (size - result.cardinality());
-                    // System.out.println(Can.cardinality());
-                    // System.out.println(result.cardinality());
                     FPre = (double) result.cardinality() / Can.cardinality();
-
-                    // FPre = (double) (Can.cardinality())
-                    // // FPre = (double) (size - Can.cardinality() - result.cardinality())
-                    // / (size - result.cardinality());
                 } else {
                     FPre = 1;
                 }
@@ -1330,7 +1668,6 @@ public class IndexNode implements Serializable {
     private void write_file_indiv(Graph q, BufferedWriter bw_data, int size) throws IOException {
         if (q.id == 0) {
             bw_data.write(
-                    // "query_id,FP_ratio,(G-C)/(G-A),SP,filtering_time(ms),filtering_time(ms)(VEQ),verification_time(ms)(VEQ),VEQs_time(ms),query_time(ms),filtering_num,inclusion_num,Candidate_num,VEQs_Candidate_num,VEQs_filtering_num,answer_num,|G|,filter_time/filter_num\n");
                     "query_id,FP,A/C,SP,filtering_time(ms),filtering_time(ms)(VEQ),verification_time(ms)(VEQ),VEQs_time(ms),query_time(ms),filtering_num,inclusion_num,Candidate_num,VEQs_Candidate_num,VEQs_filtering_num,answer_num,|G|,filter_time/filter_num\n");
 
         }
@@ -1355,11 +1692,24 @@ public class IndexNode implements Serializable {
             allbw.write(String.format("%.5f", FP2 / nonfail) + "," +
                     String.format("%.5f", FP / nonfail) + ","
                     + String.format("%.5f", SP / nonfail) + ","
-                    + String.format("%.6f", (double) search_time / 1000 / 1000 / nonfail) + ","
-                    + String.format("%.6f", CT_verify / nonfail) + ","
+                    + String.format("%.6f", (double) search_time / 1000 / 1000 / nonfail) + ","// fil
+                    + String.format("%.6f", CT_verify / nonfail) + ","// ver
+                    // + String.format("%.6f", ((double) search_time / 1000 / 1000 + // query
+                    // verification_time) / 100)
                     + String.format("%.6f", ((double) search_time / 1000 / 1000 +
-                            verification_time) / 100)
+                            verification_time + (double) (edgeFiltering_time + nodeFiltering_time) / 1000 / 1000) / 100)
                     + ","
+                    + String.format("%.6f", (double) contains_search / 1000 / 1000 / nonfail) + ","// tree1
+                    + String.format("%.6f", (double) equals_search / 1000 / 1000 / nonfail) + ","// tree2
+                    + String.format("%.6f", (double) edgeFiltering_time / 1000 / 1000 / nonfail) + ","// edge fil
+                    + String.format("%.6f", (double) nodeFiltering_time / 1000 / 1000 / nonfail) + ","// node fil
+                    + String.format("%.1f", (double) totoal_kai / nonfail) + ","
+                    + String.format("%.1f", (double) doukeicount / nonfail) + ","
+                    + String.format("%.1f", (double) removeTotalGraphs / nonfail) + ","// 何かを削除できたグラフ数
+                    + String.format("%.1f", (double) query_per_nf_count / nonfail) + ","// 削除できた頂点数
+                    + String.format("%.1f", (double) filtering_edge_num / nonfail) + ","// 削除できた辺数
+                    + String.format("%.1f", (double) removeTotalSize / nonfail) + ","// 削除できた総辺数
+
                     + String.format("%.6f", (((double) search_time / 1000 / 1000) / (size *
                             nonfail - doukeicount)))
                     + "," + (size * nonfail - doukeicount) + ","
@@ -1385,7 +1735,6 @@ public class IndexNode implements Serializable {
 
             bw.write("Number of Filtering Graphs: " + fil_count + "\n");
             bw.write("Number of inclusion Graphs: " + in_count + "\n");
-
             bw.write("Number of Candidate Graphs: " + doukeicount + "\n");
             bw.write("Number of Answer Graphs: " + totoal_kai + "\n");
             bw.write("filtering Presison : " + String.format("%.5f", FP / nonfail) +
@@ -1400,10 +1749,10 @@ public class IndexNode implements Serializable {
             // / (size * nonfail - veq_Can_total))
             // + "\n");
 
-            bw.write("(a)a VEQs Filtering Time (ms): " + String.format("%.6f",
-                    query_per_veqF / nonfail) + "\n");
-            bw.write("(b)a VEQs Verification Time (ms): " + String.format("%.6f",
-                    query_per_veqV / nonfail) + "\n");
+            bw.write("何かを削除できたグラフ数/q:" + (double) removeTotalGraphs / nonfail + "\n");
+            bw.write("削除できた頂点数/q:" + (double) query_per_nf_count / nonfail + "\n");
+            bw.write("削除できた辺数/q:" + (double) filtering_edge_num / nonfail + "\n");
+            bw.write("削除できた総辺数/q:" + (double) removeTotalSize / nonfail + "\n");
 
             bw.write("(A)a Filtering Time (ms): "
                     + String.format("%.6f", (double) search_time / 1000 / 1000 / nonfail)
@@ -1413,6 +1762,14 @@ public class IndexNode implements Serializable {
                     + String.format("%.6f", (double) edgeFiltering_time / 1000 / 1000 / nonfail)
                     + "\n");
 
+            bw.write("(D)Node_Filtering_Time (ms): "
+                    + String.format("%.6f", (double) nodeFiltering_time / 1000 / 1000 / nonfail)
+                    + "\n");
+
+            bw.write("(a)a VEQs Filtering Time (ms): " + String.format("%.6f",
+                    query_per_veqF / nonfail) + "\n");
+            bw.write("(b)a VEQs Verification Time (ms): " + String.format("%.6f",
+                    query_per_veqV / nonfail) + "\n");
             bw.write("(B=a+b)a Verification Time (ms): " + String.format("%.6f",
                     query_per_sum / nonfail)
                     + "\n");
@@ -1420,9 +1777,9 @@ public class IndexNode implements Serializable {
                     + String.format("%.6f", ((double) search_time / 1000 / 1000 +
                             verification_time) / 100)
                     + "\n");
-            bw.write("(A)+(B)+(C) a Processing Time (ms): "
+            bw.write("(A)+(B)+(C)+(D) a Processing Time (ms): "
                     + String.format("%.6f", ((double) search_time / 1000 / 1000 +
-                            verification_time + (double) edgeFiltering_time / 1000 / 1000) / 100)
+                            verification_time + (double) (edgeFiltering_time + nodeFiltering_time) / 1000 / 1000) / 100)
                     + "\n");
 
         } catch (IOException e) {
@@ -1434,7 +1791,6 @@ public class IndexNode implements Serializable {
 
         contains_search = 0;
         equals_search = 0;
-        nfg_count = 0;
         removeTotalSize = 0;
         removeTotalGraphs = 0;
         query_per_nf_count = 0;
@@ -1457,8 +1813,47 @@ public class IndexNode implements Serializable {
         SP = 0;
         fil_count = 0;
         in_count = 0;
+        nodeFiltering_time = 0;
     }
 }
+
+// private boolean chech_addMapping(int id, int[] vertexIDs) {
+// for(int map:this.mapping.get(id)){
+
+// }
+// return false;
+// }
+
+// void find_once_node() {
+// if (traverse_num == 1) {
+// // System.out.println(nodeID);
+// }
+// for (IndexNode m : children) {
+// m.find_once_node();
+// }
+// }
+
+// BitSet labels = getNoTraversNode(g, id, new BitSet());
+// if (containsAll(gLabels, labels))// 45055890
+// {
+// // System.out.println(labels.toString());
+// // System.out.println(gLabels.toString());
+// return;
+// }
+
+// private boolean backtrackJudge2(Graph g, int id) {
+// for (IndexNode m : children) {
+// if (!m.traverseCount1.get(id) && !m.traverseCount2.get(id)) {
+// // if (!m.matchGraphIndicesBitSet.get(id)) {
+// return false;
+// }
+// if (m.depth <= g.order) {
+// if (!m.backtrackJudge2(g, id))
+// return false;
+// }
+// }
+// return true;
+// }
 
 // / System.out.println("aboutfirst" + (double) nonfirstnode_num /
 // traverse_num);
@@ -1696,4 +2091,180 @@ public class IndexNode implements Serializable {
 // }
 // }
 // }
+// }
+
+// private void write_file_for_Ver_new(HashMap<Integer, ArrayList<String>>
+// gMaps,
+// LinkedHashMap<Integer, List<Pair<Integer, Integer>>> edgeFiltering,
+// List<Graph> G) {
+
+// long time = System.nanoTime();
+// // try (BufferedWriter bw2 = Files.newBufferedWriter(out)) {
+// try (
+// OutputStream os = Files.newOutputStream(out);
+// BufferedOutputStream bos = new BufferedOutputStream(os);) {
+
+// for (int trueIndex = Can.nextSetBit(0); trueIndex != -1; trueIndex = Can
+// .nextSetBit(++trueIndex)) {
+// // if (trueIndex != 23962)
+// // continue;
+
+// // can.add(trueIndex);
+// // a graph be able to be possibl filtering node
+// if (edgeFiltering.get(trueIndex) != null &&
+// edgeFiltering.get(trueIndex).size() > 0) {
+// // System.out.println(filteringNodes.get(trueIndex).size());
+// // if (trueIndex != 959)
+// // continue;
+// Graph g = G.get(trueIndex);
+// int newOrder = 0;
+// int newSize = 0;
+// int[] map = new int[g.order];
+// byte[][] newEdges = new byte[g.order][];
+// // System.arraycopy(g.edges, 0, newEdges, 0, g.order);
+// for (int i = 0; i < g.order; i++) {
+// newEdges[i] = g.edges[i].clone(); // オブジェクトがクローン可能な場合
+// }
+
+// for (Pair<Integer, Integer> p : edgeFiltering.get(trueIndex)) {
+// newEdges[p.left][p.right] = 0;
+// newEdges[p.right][p.left] = 0;
+// }
+
+// for (int v = 0; v < g.order; ++v) {
+// boolean allZeros = true; // 一行が全て0かどうかを示すフラグ
+// // if (!filteringNodes.get(trueIndex).contains(v)) {
+// // map[newOrder++] = v;
+// // continue;
+// // }
+// for (int u = 0; u < g.order; ++u) {
+// if (newEdges[v][u] > 0) {
+// ++newSize;
+// allZeros = false; // 一行に0以外の要素がある場合、フラグをfalseに設定
+// }
+// }
+// if (!allZeros) {
+// map[newOrder++] = v;
+// }
+// }
+// newSize /= 2;
+
+// removeTotalSize += g.size - newSize;
+// if (g.size - newSize != 0)
+// removeTotalGraphs++;
+
+// if (newOrder == 0 || newSize == 0) {
+// continue;
+// }
+
+// can.add(trueIndex);
+
+// String line = "#" + g.id + "\n";
+// byte[] bytes = line.getBytes();
+// bos.write(bytes); // バイトデータをファイルに書き込み
+
+// // bw2.write("#" + g.id + "\n");
+// line = newOrder + "\n";
+// bytes = line.getBytes();
+// bos.write(bytes); // バイトデータをファイルに書き込み
+
+// for (int i = 0; i < newOrder; i++) {
+// line = g.vertices[map[i]] + "\n";
+// bytes = line.getBytes();
+// bos.write(bytes); // バイトデータをファイルに書き込み
+// }
+
+// line = newSize + "\n";
+// bytes = line.getBytes();
+// bos.write(bytes); // バイトデータをファイルに書き込み
+// for (int i = 0; i < newOrder; i++) {
+// for (int j = i; j < newOrder; j++) {
+// if (newEdges[map[i]][map[j]] > 0) {
+// line = i + " " + j + "\n";
+// bytes = line.getBytes();
+// bos.write(bytes); // バイトデータをファイルに書き込み
+// }
+// }
+// }
+// } else {
+// can.add(trueIndex);
+// byte[] bytes = new byte[1024];
+// for (String line : gMaps.get(trueIndex)) {
+// bytes = line.getBytes();
+// bos.write(bytes); // バイトデータをファイルに書き込み
+// // bw2.write(line + "\n");
+// }
+// }
+// }
+
+// } catch (IOException e) {
+// System.exit(1);
+// }
+// write_time += System.nanoTime() - time;
+
+// }
+
+// void addDescendantsLabels() {
+// // BitSet descendantsLabels = new BitSet();
+
+// for (IndexNode m : children) {
+// // System.out.println(m.nodeID);
+// getDescendantsLabels(descendantsLabels);
+
+// m.addDescendantsLabels();
+// }
+// }
+// BitSet getDescendantsLabels(BitSet labels) {
+// // BitSet descendantsLabels = new BitSet();
+// for (IndexNode m : children) {
+// labels.set(m.frag.getVlabel());
+// labels = m.getDescendantsLabels(labels);
+// }
+// return labels;
+
+// }
+
+// String qFileName = String.format("Query2/%s/%s/%d/q%d.gfu",
+// dataset, mode, q.size, q.id);
+
+// directory = "Query2";
+// String directories = String.format("Query2/%s/%s/%d",
+// dataset, mode, q.size);
+
+// Path target = Paths.get(directories);
+
+// // ディレクトリを作成
+// try {
+// Files.createDirectories(target);
+// } catch (IOException e) {
+// System.out.println("ディレクトリの作成に失敗しました。");
+// e.printStackTrace();
+// }
+// try (BufferedWriter bw2 = Files.newBufferedWriter(Paths.get(qFileName))) {
+// q = q.shirinkNEC();
+// q.writeGraph2Gfu(bw2);
+// }
+// private BitSet getNoTraversNode(Graph g, int id, BitSet labels) {
+// for (IndexNode m : children) {
+// if (!m.matchGraphIndicesBitSet.get(id)) {
+// labels.set(m.frag.getVlabel());
+// }
+// if (m.depth <= g.order) {
+// labels = m.getNoTraversNode(g, id, labels);
+// }
+// }
+// return labels;
+// }
+
+// there are no descendants node because those have labels g has not
+// private boolean containsAll(BitSet gLabels, BitSet labels) {
+
+// for (int trueIndex = labels.nextSetBit(0); trueIndex != -1; trueIndex =
+// labels
+// .nextSetBit(++trueIndex)) {
+// if (gLabels.get(trueIndex)) {
+// return false;
+// }
+// }
+// return true;// 一度もたどっていないノードが全てGにないラベルであればバックトラック
 // }

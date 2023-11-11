@@ -8,4 +8,9 @@ public interface CodeFragment {
     public abstract boolean contains(CodeFragment other);
 
     public abstract boolean contains_adj(CodeFragment other);
+
+    public abstract boolean equals_nec(CodeFragment other);
+
+    public abstract boolean equals(Object other);
+
 }

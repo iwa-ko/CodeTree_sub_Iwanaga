@@ -1,9 +1,6 @@
 package codetree.core;
 
 import java.io.Serializable;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.util.*;
@@ -29,12 +26,12 @@ public class CodeTree2 implements Serializable {
 
         switch (dataset) {
             case "AIDS":
-                // limDepth = 5;
-                limDepth = 9;
+                limDepth = 5;
+                // limDepth = 9;
                 break;
 
             case "COLLAB":
-                limDepth = 5;
+                limDepth = 3;
                 break;
 
             case "REDDIT-MULTI-5K":
@@ -50,11 +47,11 @@ public class CodeTree2 implements Serializable {
                 break;
 
             case "pcms":
-                limDepth = 10;
+                limDepth = 5;// 5==10 edge filtering
                 break;
 
             case "ppigo":
-                limDepth = 6;
+                limDepth = 5;
                 // rand = new Random(1);
                 break;
         }
@@ -69,6 +66,14 @@ public class CodeTree2 implements Serializable {
                 root2.addPath(code, g.id, false);
             }
         }
+
+        List<ArrayList<CodeFragment>> codelist = impl.computeCanonicalCode(Graph.numOflabels(G));
+        for (ArrayList<CodeFragment> c : codelist) {
+            root2.addPath(c, -1, false);
+        }
+
+        index.write(limDepth + "," + String.format("%.6f", (double) (System.nanoTime() - time) / 1000 / 1000) +
+                ",");
 
         // int sigma = Graph.numOflabels(G);
         // int start_label = sigma / 10;
@@ -85,10 +90,6 @@ public class CodeTree2 implements Serializable {
         // }
         // }
         // }
-
-        // index.write(dataset + "," + limDepth + ","
-        // + String.format("%.6f", (double) (System.nanoTime() - time) / 1000 / 1000) +
-        // ",");
 
         System.out.println("depth " + (limDepth));
         bw.write("limDepth" + (limDepth) + "\n");

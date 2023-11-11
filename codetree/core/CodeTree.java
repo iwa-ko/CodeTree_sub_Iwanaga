@@ -34,8 +34,8 @@ public class CodeTree implements Serializable {
 
         switch (dataset) {
             case "AIDS":
+                // limDepth = 9;
                 limDepth = 5;
-                // limDepth = 8;
 
                 break;
 
@@ -61,16 +61,29 @@ public class CodeTree implements Serializable {
 
             case "ppigo":
                 limDepth = 7;
-                rand = new Random(1);
+                // rand = new Random(1);
                 break;
         }
 
-        // shirinkNEC(G);
+        int totalOrder = 0;
+        int newOrder = 0;
+
+        // HashMap<Integer, Integer> necMap = new HashMap<>();
+        // for (Graph g : G) {
+        // totalOrder += g.order;
+        // Graph gn = g.shirinkNEC(necMap);
+        // newOrder += gn.order;
+        // G.set(g.id, gn);
+        // }
+        // System.out.println(dataset + ":" + (double) (totalOrder - newOrder) /
+        // G.size());
 
         int loop = 1;
 
         for (Graph g : G) {
             for (int i = 0; i < loop; i++) {
+                // if (g.id > G.size() / 30)
+                // continue;
                 int start_vertice = rand.nextInt(g.order);
                 code = impl.computeCanonicalCode(g, start_vertice, limDepth);
                 root.addPath(code, g.id, false);
@@ -200,10 +213,10 @@ public class CodeTree implements Serializable {
     }
 
     public BitSet subgraphSearch(Graph query, BufferedWriter bw, int size, String mode, String dataset,
-            BufferedWriter bwout, BufferedWriter allbw, HashMap<Integer, ArrayList<String>> gMaps, List<Graph> G,
+            BufferedWriter bwout, BufferedWriter allbw, List<Graph> G,
             IndexNode root2, int qsize)
             throws IOException, InterruptedException {
-        return root.subsearch(query, impl, size, bw, mode, dataset, bwout, allbw, gMaps, G, root2, "Query", qsize);
+        return root.subsearch(query, impl, size, bw, mode, dataset, bwout, allbw, G, root2, "Query", qsize);
     }
 }
 

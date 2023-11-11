@@ -19,6 +19,8 @@ public class Graph implements Serializable {
 
     static Random rand;
 
+    public HashMap<Integer, Integer> necMap;
+
     public Graph(int id, byte[] vertices, byte[][] edges) {
         this.id = id;
         this.vertices = vertices;
@@ -28,6 +30,48 @@ public class Graph implements Serializable {
         this.size = this.size();
 
         adjList = makeAdjList();
+
+        // necMap = new HashMap<>();
+    }
+
+    public Graph(int id, int order, int size, int[][] newAdjList, byte[] vertices, byte[][] newEdges) {
+        this.id = id;
+        this.vertices = vertices;
+        this.order = order;
+        this.size = size;
+
+        this.edges = newEdges;
+
+        this.adjList = newAdjList;
+
+    }
+
+    public Graph clone() {
+        byte[][] newEdges = new byte[order][];
+        byte[] newVertices = new byte[order];
+        // int[][] newAdjList = new int[order][];
+
+        for (int i = 0; i < order; i++) {
+            newEdges[i] = edges[i].clone(); // オブジェクトがクローン可能な場合
+            // newAdjList[i] = adjList[i].clone();
+        }
+        newVertices = vertices.clone();
+
+        return new Graph(id, order, size, adjList, newVertices, newEdges);
+
+    }
+
+    public Graph(int id, byte[] vertices, byte[][] edges, HashMap<Integer, Integer> map) {
+        this.id = id;
+        this.vertices = vertices;
+        this.edges = edges;
+
+        this.order = this.order();
+        this.size = this.size();
+
+        adjList = makeAdjList();
+
+        necMap = new HashMap<>(map);
     }
 
     private int[][] makeAdjList() {
@@ -137,11 +181,54 @@ public class Graph implements Serializable {
         return labels;
     }
 
+    // public Graph shirinkNEC() {
+
+    // int order = 0;
+    // int[] map = new int[order()];
+    // ArrayList<Integer> remove = new ArrayList<>();
+
+    // for (int v = 0; v < this.order; ++v) {
+    // if (this.adjList[v].length > 1 || remove.contains(v))
+    // continue;
+
+    // if (this.adjList[v].length == 0) {// 独立点の削除
+    // remove.add(v);
+    // continue;
+    // }
+
+    // int adj = this.adjList[v][0];// 親の頂点
+
+    // for (int u : this.adjList[adj]) {
+    // if (this.adjList[u].length > 1 || u == v || vertices[u] != vertices[v])
+    // continue;
+    // remove.add(u);
+    // }
+    // }
+
+    // for (int v = 0; v < this.order; v++) {
+    // if (!remove.contains(v)) {
+    // map[order++] = v;
+    // }
+    // }
+    // byte[] vertices = new byte[order];
+    // byte[][] edges = new byte[order][order];
+
+    // for (int v = 0; v < order; ++v) {
+    // vertices[v] = this.vertices[map[v]];
+    // for (int u = 0; u < order; ++u) {
+    // edges[v][u] = this.edges[map[v]][map[u]];
+    // }
+    // }
+    // return new Graph(id, vertices, edges);
+    // }
+
     public Graph shirinkNEC() {
 
         int order = 0;
         int[] map = new int[order()];
-        ArrayList<Integer> remove = new ArrayList<>();
+        HashSet<Integer> remove = new HashSet<>();
+        HashMap<Integer, Integer> necMap1 = new HashMap<>();
+        HashMap<Integer, Integer> copyNecMap = new HashMap<>();
 
         for (int v = 0; v < this.order; ++v) {
             if (this.adjList[v].length > 1 || remove.contains(v))
@@ -153,17 +240,22 @@ public class Graph implements Serializable {
             }
 
             int adj = this.adjList[v][0];// 親の頂点
+            int removeCou = 0;
 
             for (int u : this.adjList[adj]) {
+                removeCou = 0;
                 if (this.adjList[u].length > 1 || u == v || vertices[u] != vertices[v])
                     continue;
+                removeCou++;
                 remove.add(u);
             }
+            copyNecMap.put(adj, removeCou);
         }
 
         for (int v = 0; v < this.order; v++) {
             if (!remove.contains(v)) {
                 map[order++] = v;
+                necMap1.put(order, copyNecMap.get(v));
             }
         }
         byte[] vertices = new byte[order];
@@ -175,7 +267,7 @@ public class Graph implements Serializable {
                 edges[v][u] = this.edges[map[v]][map[u]];
             }
         }
-        return new Graph(id, vertices, edges);
+        return new Graph(id, vertices, edges, necMap1);
     }
 
     public Graph shrink() {

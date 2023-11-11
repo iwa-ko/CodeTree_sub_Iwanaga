@@ -23,4 +23,6 @@ public interface GraphCode {
 
         abstract List<ArrayList<CodeFragment>> computeCanonicalCode(int labels_length);
 
+        abstract List<ArrayList<CodeFragment>> computeCanonicalCode_adj(int labels_length);
+
 }

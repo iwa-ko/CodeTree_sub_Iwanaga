@@ -37,9 +37,9 @@ class Main {
         Path writeindex = Paths.get(allindex);
         try (BufferedWriter allfind = Files.newBufferedWriter(writeindex)) {
             allfind.write(
-                    "dataset,depth,addPathtoTree(ms),Tree_size,Tree_size(new),remove_time(ms),addIDtoTree(ms),Build_tree(ms)\n");
+                    "dataset,depth,addPathtoTree(ms),Tree_size,Tree_size(new),remove_time(ms),addIDtoTree(ms),Build_tree(ms),depth,addPathtoTree(ms),Tree_size,Tree_size(new),remove_time(ms),addIDtoTree(ms),Build_tree(ms)\n");
 
-            for (datasetID = 0; datasetID <= 0; datasetID++) {
+            for (datasetID = 3; datasetID <= 3; datasetID++) {
 
                 if (datasetID < 0 || datasetID > 6) {
                     System.out.println("無効なデータセットIDです");
@@ -50,30 +50,33 @@ class Main {
 
                 if (searchID == 1) {
 
-                    System.out.println("部分グラフ検索を開始します");
+                    // System.out.println("部分グラフ検索を開始します");
 
                     List<ArrayList<Pair<Integer, Graph>>> Q = new ArrayList<>();
                     final int querysize = 100;
                     final int minedge = 4;
-                    final int maxedge = 8;
+                    final int maxedge = 64;
 
                     List<Graph> G = SdfFileReader.readFile_gfu(Paths.get(gfuFilename));
 
                     // int totalOrder = 0;
                     // int newOrder = 0;
-                    // try (BufferedWriter bw2 = Files.newBufferedWriter(Paths.get(newGfuFilename)))
-                    // {
+                    // // try (BufferedWriter bw2 =
+                    // Files.newBufferedWriter(Paths.get(newGfuFilename)))
+                    // // {
 
-                    // gfuFilename = newGfuFilename;
+                    // // gfuFilename = newGfuFilename;
                     // for (Graph g : G) {
                     // totalOrder += g.order;
                     // Graph gn = g.shirinkNEC();
-                    // writeGraph2Gfu(bw2, gn);
+                    // // writeGraph2Gfu(bw2, gn);
                     // newOrder += gn.order;
                     // G.set(g.id, gn);
+                    // // }
                     // }
-                    // }
-                    // System.out.println(totalOrder + ":" + newOrder);
+                    // // System.out.println(totalOrder + ":" + newOrder);
+                    // System.out.println(dataset + ":" + (double) (totalOrder - newOrder) /
+                    // G.size());
 
                     for (int numOfEdge = minedge; numOfEdge <= maxedge; numOfEdge *= 2) {
                         ArrayList<Pair<Integer, Graph>> qset = new ArrayList<>();
@@ -116,7 +119,8 @@ class Main {
                     try (BufferedWriter bw2 = Files.newBufferedWriter(out);
                             BufferedWriter allbw = Files.newBufferedWriter(all);) {
                         allbw.write(
-                                "dataset,query_set,FP_ratio,(G-C)/(G-A),SP,filtering_time(ms),verification_time(ms),query_time(ms),codetree_filtime/fil_num,codetree_fil_num,allfil_num/allfil_time,allfil_num,nonfail\n");
+                                // "dataset,query_set,FP_ratio,(G-C)/(G-A),SP,filtering_time(ms),verification_time(ms),query_time(ms),codetree_filtime/fil_num,codetree_fil_num,allfil_num/allfil_time,allfil_num,nonfail\n");
+                                "dataset,query_set,FP_ratio,A/C,SP,filtering_time(ms),verification_time(ms),query_time(ms),tree1_search_time(ms),tree2_search_time(ms),edge_fil_time(ms),node_fil_time(ms),answer_sum,ave(Can(q)),Number of graphs to delete,Number of vertices removed,Num Deleted Edges,total number of deleted edges,codetree_filtime/fil_num,codetree_fil_num,allfil_num/allfil_time,allfil_num,nonfail\n");
 
                         System.out.println(" ");
                         resultFilename = String.format("result/%s_result.txt",
@@ -139,13 +143,22 @@ class Main {
                             // if (true)
                             // continue;
 
+                            start = System.nanoTime();
+
                             System.out.println("\ntree2");
                             CodeTree2 tree2 = new CodeTree2(graphCode, G, bw, dataset, allfind);
+
+                            bw.write("Build tree(ms): "
+                                    + String.format("%.6f", (double) (System.nanoTime() - start) / 1000 / 1000) +
+                                    "\n");
+                            allfind.write(","
+                                    + String.format("%.6f", (double) (System.nanoTime() - start) / 1000 / 1000)
+                                    + "\n");
 
                             // G = null;
 
                             // HashMap<Integer, ArrayList<String>> gMaps = makeGmaps(gfuFilename);
-                            HashMap<Integer, ArrayList<String>> gMaps = makeGmaps(gfuFilename);
+                            // HashMap<Integer, ArrayList<String>> gMaps = makeGmaps(gfuFilename);
 
                             int index = minedge;
                             String mode = null;
@@ -157,8 +170,17 @@ class Main {
                                     break;
                                 }
 
-                                // if ((datasetID == 3 && index >= 32) || (datasetID == 6 && index >= 16)
+                                if ((datasetID == 3 && index >= 64) || (datasetID == 6 && index >= 64)) {
+                                    index *= 2;
+                                    continue;
+                                }
+
+                                // if ((datasetID == 3 && index >= 32) || (datasetID == 6 && index >= 32)
                                 // || index >= 128) {
+                                // index *= 2;
+                                // continue;
+                                // }
+                                // if ((datasetID == 6 && index >= 32)) {
                                 // index *= 2;
                                 // continue;
                                 // }
@@ -181,9 +203,6 @@ class Main {
                                     mode = "bfs";
                                 }
 
-                                if (mode.equals("bfs"))
-                                    continue;
-
                                 try (BufferedWriter bwout = new BufferedWriter(
                                         new OutputStreamWriter(new FileOutputStream(data_out), "UTF-8"));) {
 
@@ -199,7 +218,7 @@ class Main {
                                         }
                                         BitSet result = tree.subgraphSearch(q.right, bw, datasetSize, mode,
                                                 dataset,
-                                                bwout, allbw, gMaps, G, tree2.root2, q.right.size);
+                                                bwout, allbw, G, tree2.root2, q.right.size);
 
                                         bw2.write(
                                                 q.left.toString() + " " + result.cardinality() + "個"
@@ -304,7 +323,7 @@ class Main {
 
         if (graphCodeID == 1) {
             graphCode = new AcgmCode();
-            System.out.println("AcGMコードで動作します");
+            // System.out.println("AcGMコードで動作します");
         } else if (graphCodeID == 2) {
             graphCode = new XAcgmCode();
             System.out.println("XAcGMコードで動作します");

@@ -8,9 +8,9 @@ import java.io.BufferedReader;
 import codetree.core.Graph;
 
 public class SdfFileReader {
-    public static Path file;
-    public static String graphID;
-    public static int count = 0;
+    static Path file;
+    static String graphID;
+    static int count;
 
     public static List<Graph> readFile(Path sdfFile) {
         file = sdfFile;
@@ -34,6 +34,7 @@ public class SdfFileReader {
 
     public static List<Graph> readFile_gfu(Path sdfFile) {
         List<Graph> G = new ArrayList<>();
+        count = 0;
 
         try (BufferedReader br = Files.newBufferedReader(sdfFile)) {
             Graph g;
@@ -44,6 +45,8 @@ public class SdfFileReader {
             System.err.println(e);
             System.exit(1);
         }
+
+        graphID = null;
         return G;
     }
 

@@ -21,6 +21,17 @@ public class AcgmCode
         return codeList;
     }
 
+    @Override
+    public List<ArrayList<CodeFragment>> computeCanonicalCode_adj(int labels_length) {
+        List<ArrayList<CodeFragment>> codeList = new ArrayList<>(labels_length);
+        for (int i = 0; i < labels_length; i++) {
+            ArrayList<CodeFragment> code = new ArrayList<>(1);
+            code.add(new AcgmCodeFragment((byte) i));
+            codeList.add(code);
+        }
+        return codeList;
+    }
+
     // super graph search
     @Override
     public List<CodeFragment> computeCanonicalCode(Graph g, int b) {

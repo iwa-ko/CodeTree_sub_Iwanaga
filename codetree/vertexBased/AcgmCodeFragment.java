@@ -38,6 +38,13 @@ class AcgmCodeFragment
     }
 
     @Override
+    public boolean equals_nec(CodeFragment other0) {
+        AcgmCodeFragment other = (AcgmCodeFragment) other0;
+
+        throw new UnsupportedOperationException("Unimplemented method 'equals_nec'");
+    }
+
+    @Override
     public boolean contains(CodeFragment other0) {
         AcgmCodeFragment other = (AcgmCodeFragment) other0;
 
