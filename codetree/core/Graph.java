@@ -21,6 +21,8 @@ public class Graph implements Serializable {
 
     public HashMap<Integer, Integer> necMap;
 
+    public BitSet filterFlag;
+
     public Graph(int id, byte[] vertices, byte[][] edges) {
         this.id = id;
         this.vertices = vertices;
@@ -30,6 +32,8 @@ public class Graph implements Serializable {
         this.size = this.size();
 
         adjList = makeAdjList();
+
+        filterFlag = new BitSet();
 
         // necMap = new HashMap<>();
     }
@@ -43,21 +47,7 @@ public class Graph implements Serializable {
         this.edges = newEdges;
 
         this.adjList = newAdjList;
-
-    }
-
-    public Graph clone() {
-        byte[] newVertices = new byte[order];
-
-        // byte[][] newEdges = new byte[order][];
-        // for (int i = 0; i < order; i++) {
-        // newEdges[i] = edges[i].clone(); // オブジェクトがクローン可能な場合
-        // }
-
-        newVertices = vertices.clone();
-
-        // return new Graph(id, order, size, adjList, newVertices, newEdges);
-        return new Graph(id, order, size, adjList, newVertices, edges);
+        this.filterFlag = new BitSet(order);
 
     }
 

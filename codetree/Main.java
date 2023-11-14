@@ -37,9 +37,9 @@ class Main {
         Path writeindex = Paths.get(allindex);
         try (BufferedWriter allfind = Files.newBufferedWriter(writeindex)) {
             allfind.write(
-                    "dataset,depth,addPathtoTree(ms),Tree_size,Tree_size(new),remove_time(ms),addIDtoTree(ms),Build_tree(ms),depth,addPathtoTree(ms),Tree_size,Tree_size(new),remove_time(ms),addIDtoTree(ms),Build_tree(ms)\n");
+                    "dataset,depth,addPathtoTree(ms),Tree_size,Tree_size(new),remove_time(ms),addIDtoTree(ms),Build_tree(ms)\n");
 
-            for (datasetID = 0; datasetID <= 0; datasetID++) {
+            for (datasetID = 5; datasetID <= 5; datasetID++) {
 
                 if (datasetID < 0 || datasetID > 6) {
                     System.out.println("無効なデータセットIDです");
@@ -138,22 +138,10 @@ class Main {
                                     "\n");
                             allfind.write(","
                                     + String.format("%.6f", (double) (System.nanoTime() - start) / 1000 / 1000)
-                                    + ",");
+                                    + "\n");
 
                             // if (true)
                             // continue;
-
-                            start = System.nanoTime();
-
-                            System.out.println("\ntree2");
-                            CodeTree2 tree2 = new CodeTree2(graphCode, G, bw, dataset, allfind);
-
-                            bw.write("Build tree(ms): "
-                                    + String.format("%.6f", (double) (System.nanoTime() - start) / 1000 / 1000) +
-                                    "\n");
-                            allfind.write(","
-                                    + String.format("%.6f", (double) (System.nanoTime() - start) / 1000 / 1000)
-                                    + "\n");
 
                             // G = null;
 
@@ -166,7 +154,11 @@ class Main {
 
                             for (ArrayList<Pair<Integer, Graph>> Q_set : Q) {
 
-                                if (index <= maxedge) {
+                                // if (index <= maxedge) {
+                                // index *= 2;
+                                // continue;
+                                // }
+                                if (index > maxedge) {
                                     index *= 2;
                                     continue;
                                 }
@@ -219,7 +211,7 @@ class Main {
                                         }
                                         BitSet result = tree.subgraphSearch(q.right, bw, datasetSize, mode,
                                                 dataset,
-                                                bwout, allbw, G, tree2.root2, q.right.size);
+                                                bwout, allbw, G, q.right.size);
 
                                         bw2.write(
                                                 q.left.toString() + " " + result.cardinality() + "個"

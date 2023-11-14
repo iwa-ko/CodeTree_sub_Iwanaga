@@ -213,10 +213,9 @@ public class CodeTree implements Serializable {
     }
 
     public BitSet subgraphSearch(Graph query, BufferedWriter bw, int size, String mode, String dataset,
-            BufferedWriter bwout, BufferedWriter allbw, List<Graph> G,
-            IndexNode root2, int qsize)
+            BufferedWriter bwout, BufferedWriter allbw, List<Graph> G, int qsize)
             throws IOException, InterruptedException {
-        return root.subsearch(query, impl, size, bw, mode, dataset, bwout, allbw, G, root2, "Query", qsize);
+        return root.subsearch(query, impl, size, bw, mode, dataset, bwout, allbw, G, "Query", qsize);
     }
 }
 
