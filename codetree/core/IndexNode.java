@@ -246,52 +246,6 @@ public class IndexNode implements Serializable {
         m.addPath(cdr, graphIndex, supergraphSearch);
     }
 
-    List<Integer> search(Graph q, GraphCode impl) {
-        HashSet<IndexNode> result0 = new HashSet<>();
-        List<Pair<IndexNode, SearchInfo>> infoList = impl.beginSearch(q, this);
-        for (Pair<IndexNode, SearchInfo> info : infoList) {
-            if (info.left.supNode) {
-                info.left.search(result0, q, info.right, impl);
-            }
-        }
-
-        ArrayList<Integer> result = new ArrayList<>();
-        for (IndexNode p : result0) {
-            result.addAll(p.matchGraphIndices);
-
-            final int c = p.matchGraphIndices.size();
-            for (; p != null; p = p.parent) {
-                p.count += c;
-            }
-        }
-
-        Collections.sort(result);
-        return result;
-    }
-
-    private void search(Set<IndexNode> result, Graph q, SearchInfo info, GraphCode impl) {
-        final int c = matchGraphIndices.size();
-        if (c > 0 && !result.contains(this)) {
-            result.add(this);
-
-            for (IndexNode p = this; p != null; p = p.parent) {// 最適化アルゴリズム発動
-                p.count -= c;
-            }
-        }
-
-        List<Pair<CodeFragment, SearchInfo>> nextFrags = impl.enumerateFollowableFragments(q, info, null);
-
-        for (IndexNode m : children) {
-            if (m.count > 0 && m.supNode) {
-                for (Pair<CodeFragment, SearchInfo> frag : nextFrags) {
-                    if (frag.left.equals(m.frag)) {
-                        m.search(result, q, frag.right, impl);
-                    }
-                }
-            }
-        }
-    }
-
     void find_nodeFiltering(int size, HashMap<Integer, HashSet<Integer>> filteringNodes, BitSet qLabels) {
         if (depth > 1 && traverse_num == 1) {
             for (int i : mapping.keySet()) {
@@ -331,12 +285,6 @@ public class IndexNode implements Serializable {
         }
     }
 
-    // HashSet<Integer> noVF = new HashSet<>();
-    // for (IndexNode m : children) {
-    // if (m.traverse_num >= 1 && m.mapping.get(i) != null) {
-    // noVF.add(m.mapping.get(i)[m.depth - 1]);
-    // }
-    // }
     private void find_edgeFiltering(int order, int size,
             LinkedHashMap<Integer, List<Pair<Integer, Integer>>> edgeFiltering) {
         if (traverse_num == 1 && depth <= order - 1) {
@@ -412,6 +360,15 @@ public class IndexNode implements Serializable {
                                     continue;
                                 filtering_edge_num++;
 
+                                if (g.edges[target_node][target_node_pair] == 0)
+                                    continue;
+
+                                // copyGid.set(i);
+                                if (removeEdges.get(i) == null) {
+                                    removeEdges.put(i, new ArrayList<>());
+                                }
+                                removeEdges.get(i).add(new Pair<Integer, Integer>(target_node, target_node_pair));
+
                                 g.edges[target_node][target_node_pair] = 0;
                                 g.edges[target_node_pair][target_node] = 0;
                             }
@@ -433,7 +390,18 @@ public class IndexNode implements Serializable {
                                 int target_node_pair = m.mapping.get(i)[m.depth - 2];
                                 if (g.vertices[target_node] == -1 || g.vertices[target_node_pair] == -1)
                                     continue;
+
+                                if (g.edges[target_node][target_node_pair] == 0)
+                                    continue;
+
                                 filtering_edge_num++;
+                                // copyGid.set(i);
+
+                                if (removeEdges.get(i) == null) {
+                                    removeEdges.put(i, new ArrayList<>());
+                                }
+                                removeEdges.get(i).add(new Pair<Integer, Integer>(target_node, target_node_pair));
+
                                 g.edges[target_node][target_node_pair] = 0;
                                 g.edges[target_node_pair][target_node] = 0;
                             }
@@ -538,6 +506,7 @@ public class IndexNode implements Serializable {
                                     .get(trueIndex)
                                     .nextSetBit(++v)) {
                                 query_per_nf_count++;
+                                // copyGid.set(trueIndex);
                                 g.vertices[v] = -1;
 
                             }
@@ -551,6 +520,7 @@ public class IndexNode implements Serializable {
                                     .get(trueIndex)
                                     .nextSetBit(++v)) {
                                 query_per_nf_count++;
+                                // copyGid.set(trueIndex);
                                 g.vertices[v] = -1;
 
                             }
@@ -565,6 +535,9 @@ public class IndexNode implements Serializable {
 
     static long checkOrderMapTime = 0;
     static long checkOrder = 0;
+    // static BitSet copyGid = new BitSet();
+    // static List<Graph> D = new ArrayList<>();
+    static HashMap<Integer, ArrayList<Pair<Integer, Integer>>> removeEdges = new HashMap<>();
 
     BitSet subsearch(Graph q, GraphCode impl, int size, BufferedWriter bw, String mode, String dataset,
             BufferedWriter bw_data, BufferedWriter allbw, List<Graph> G,
@@ -574,18 +547,18 @@ public class IndexNode implements Serializable {
         List<Graph> D = new ArrayList<>(G.size());
 
         for (Graph g : G) {
-
             D.add(g.clone());
         }
+        removeEdges = new HashMap<>();
 
         long start = System.nanoTime();
 
         init_Bitset(q, size);
         root2.init_traverse();
 
-        long test = System.nanoTime();
+        // long test = System.nanoTime();
         // root2.checkOrderMap(q);
-        checkOrderMapTime += System.nanoTime() - test;
+        // checkOrderMapTime += System.nanoTime() - test;
 
         // BitSet qLabels = q.labels_Set();
 
@@ -621,7 +594,9 @@ public class IndexNode implements Serializable {
             // LinkedHashMap<Integer, BitSet> labelFiltering = new LinkedHashMap<>();
             // root2.find_labelFiltering(labelFiltering);
             // root2.find_labelFiltering(D);
+
             root2.find_labelFiltering2(D);
+
             // for (Integer value : labelFiltering.keySet()) {
             // query_per_nf_count += labelFiltering.get(value).size();
             // }
@@ -633,13 +608,14 @@ public class IndexNode implements Serializable {
             // LinkedHashMap<Integer, List<Pair<Integer, Integer>>> edgeFiltering = new
             // LinkedHashMap<>();
             // root2.find_edgeFiltering(q.order, size, edgeFiltering);
-            root2.find_edgeFiltering(D, q.order);
 
+            root2.find_edgeFiltering(D, q.order);
             edgeFiltering_time += System.nanoTime() - start;
 
             // write_file_for_Ver(gMaps, labelFiltering, edgeFiltering, G);
 
             // write_file_for_Ver(D);
+
             write_file_for_Ver2(D);
 
             // LinkedHashMap<Integer, HashSet<Integer>> labelFiltering = new
@@ -698,6 +674,16 @@ public class IndexNode implements Serializable {
 
         write_file_indiv(q, bw_data, size);
 
+        for (Graph g : G) {
+            if (removeEdges.get(g.id) != null) {
+                for (Pair<Integer, Integer> p : removeEdges.get(g.id)) {
+                    g.edges[p.left][p.right] = 1;
+                    g.edges[p.right][p.left] = 1;
+
+                }
+            }
+        }
+
         if (q.id == 99) {
             // System.out.println("\n候補グラフ数" + doukeicount);
             // System.out.println("何かを削除できたグラフ数" + removeTotalGraphs);
@@ -720,6 +706,7 @@ public class IndexNode implements Serializable {
             edgeFiltering_time = 0;
             filtering_edge_num = 0;
             removeTotalSize = 0;
+            // copyGid = new BitSet();
         }
         return result;
     }
@@ -735,8 +722,6 @@ public class IndexNode implements Serializable {
         }
     }
 
-    static int t = 0;
-
     private void write_file_for_Ver2(List<Graph> D) {
         long time = System.nanoTime();
         try (BufferedWriter bw2 = Files.newBufferedWriter(out)) {
@@ -749,29 +734,33 @@ public class IndexNode implements Serializable {
                 int newOrder = 0;
                 int[] map = new int[g.order];
 
-                // for (int v = 0; v < g.order; v++) {
+                // for (int v = 0; v < g.order; ++v) {
+                // boolean allZeros = true; // 一行が全て0かどうかを示すフラグ
                 // if (g.vertices[v] == -1)
                 // continue;
+                // for (int u = 0; u < g.order; ++u) {
+                // if (g.vertices[u] == -1)
+                // continue;
+                // if (g.edges[v][u] > 0) {
+                // ++newSize;
+                // allZeros = false; // 一行に0以外の要素がある場合、フラグをfalseに設定
+                // }
+                // }
+                // if (!allZeros) {
                 // map[newOrder++] = v;
                 // }
-
-                // if (newOrder == 0) {
-                // continue;
                 // }
-
-                // bw2.write("#" + g.id + "\n");
-                // bw2.write(newOrder + "\n");
                 for (int v = 0; v < g.order; ++v) {
-                    boolean allZeros = true; // 一行が全て0かどうかを示すフラグ
                     if (g.vertices[v] == -1)
                         continue;
-                    for (int u = 0; u < g.order; ++u) {
+                    boolean allZeros = true; // 一行が全て0かどうかを示すフラグ
+                    int[] adj = g.adjList[v];
+                    for (int u : adj) {
                         if (g.vertices[u] == -1)
                             continue;
                         if (g.edges[v][u] > 0) {
                             ++newSize;
                             allZeros = false; // 一行に0以外の要素がある場合、フラグをfalseに設定
-                            // break;
                         }
                     }
                     if (!allZeros) {
@@ -783,7 +772,6 @@ public class IndexNode implements Serializable {
                 if (newOrder == 0 || newSize == 0) {
                     continue;
                 }
-                t++;
                 can.add(trueIndex);
 
                 // List<String> verticeList = new ArrayList<>();
@@ -806,12 +794,18 @@ public class IndexNode implements Serializable {
                     for (int j = i; j < newOrder; j++) {
                         if (g.edges[map[i]][map[j]] > 0) {
                             bw2.write(i + " " + j + "\n");
-                            // newSize++;
-                            // String data = i + " " + j + "\n";
-                            // edgeList.add(data);
                         }
                     }
                 }
+
+                // for (int i = 0; i < newOrder; i++) {
+                // int[] adj = g.adjList[map[i]];
+                // for (int j : adj) {
+                // if (g.edges[map[i]][map[j]] > 0) {
+                // bw2.write(i + " " + j + "\n");
+                // }
+                // }
+                // }
 
                 // String size = newSize + "\n";
 
@@ -869,7 +863,6 @@ public class IndexNode implements Serializable {
                 if (newOrder == 0 || newSize == 0) {
                     continue;
                 }
-                t++;
                 can.add(trueIndex);
 
                 bw2.write("#" + g.id + "\n");
@@ -1814,6 +1807,52 @@ public class IndexNode implements Serializable {
         fil_count = 0;
         in_count = 0;
         nodeFiltering_time = 0;
+    }
+
+    List<Integer> search(Graph q, GraphCode impl) {
+        HashSet<IndexNode> result0 = new HashSet<>();
+        List<Pair<IndexNode, SearchInfo>> infoList = impl.beginSearch(q, this);
+        for (Pair<IndexNode, SearchInfo> info : infoList) {
+            if (info.left.supNode) {
+                info.left.search(result0, q, info.right, impl);
+            }
+        }
+
+        ArrayList<Integer> result = new ArrayList<>();
+        for (IndexNode p : result0) {
+            result.addAll(p.matchGraphIndices);
+
+            final int c = p.matchGraphIndices.size();
+            for (; p != null; p = p.parent) {
+                p.count += c;
+            }
+        }
+
+        Collections.sort(result);
+        return result;
+    }
+
+    private void search(Set<IndexNode> result, Graph q, SearchInfo info, GraphCode impl) {
+        final int c = matchGraphIndices.size();
+        if (c > 0 && !result.contains(this)) {
+            result.add(this);
+
+            for (IndexNode p = this; p != null; p = p.parent) {// 最適化アルゴリズム発動
+                p.count -= c;
+            }
+        }
+
+        List<Pair<CodeFragment, SearchInfo>> nextFrags = impl.enumerateFollowableFragments(q, info, null);
+
+        for (IndexNode m : children) {
+            if (m.count > 0 && m.supNode) {
+                for (Pair<CodeFragment, SearchInfo> frag : nextFrags) {
+                    if (frag.left.equals(m.frag)) {
+                        m.search(result, q, frag.right, impl);
+                    }
+                }
+            }
+        }
     }
 }
 

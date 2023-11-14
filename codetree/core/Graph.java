@@ -47,17 +47,17 @@ public class Graph implements Serializable {
     }
 
     public Graph clone() {
-        byte[][] newEdges = new byte[order][];
         byte[] newVertices = new byte[order];
-        // int[][] newAdjList = new int[order][];
 
-        for (int i = 0; i < order; i++) {
-            newEdges[i] = edges[i].clone(); // オブジェクトがクローン可能な場合
-            // newAdjList[i] = adjList[i].clone();
-        }
+        // byte[][] newEdges = new byte[order][];
+        // for (int i = 0; i < order; i++) {
+        // newEdges[i] = edges[i].clone(); // オブジェクトがクローン可能な場合
+        // }
+
         newVertices = vertices.clone();
 
-        return new Graph(id, order, size, adjList, newVertices, newEdges);
+        // return new Graph(id, order, size, adjList, newVertices, newEdges);
+        return new Graph(id, order, size, adjList, newVertices, edges);
 
     }
 

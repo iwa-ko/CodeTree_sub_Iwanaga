@@ -39,7 +39,7 @@ public class CodeTree2 implements Serializable {
                 break;
 
             case "pdbs":
-                limDepth = 16;
+                limDepth = 10;
                 break;
 
             case "IMDB-MULTI":

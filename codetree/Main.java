@@ -39,7 +39,7 @@ class Main {
             allfind.write(
                     "dataset,depth,addPathtoTree(ms),Tree_size,Tree_size(new),remove_time(ms),addIDtoTree(ms),Build_tree(ms),depth,addPathtoTree(ms),Tree_size,Tree_size(new),remove_time(ms),addIDtoTree(ms),Build_tree(ms)\n");
 
-            for (datasetID = 3; datasetID <= 3; datasetID++) {
+            for (datasetID = 0; datasetID <= 0; datasetID++) {
 
                 if (datasetID < 0 || datasetID > 6) {
                     System.out.println("無効なデータセットIDです");
@@ -166,11 +166,12 @@ class Main {
 
                             for (ArrayList<Pair<Integer, Graph>> Q_set : Q) {
 
-                                if (index > maxedge) {
-                                    break;
+                                if (index <= maxedge) {
+                                    index *= 2;
+                                    continue;
                                 }
 
-                                if ((datasetID == 3 && index >= 64) || (datasetID == 6 && index >= 64)) {
+                                if ((datasetID == 3 && index == 64) || (datasetID == 6 && index == 64)) {
                                     index *= 2;
                                     continue;
                                 }
