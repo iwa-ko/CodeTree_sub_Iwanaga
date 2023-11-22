@@ -38,10 +38,9 @@ class AcgmCodeFragment
     }
 
     @Override
-    public boolean equals_nec(CodeFragment other0) {
+    public boolean equals_nec(CodeFragment other0, int m_nec, int v_nec) {
         AcgmCodeFragment other = (AcgmCodeFragment) other0;
-
-        throw new UnsupportedOperationException("Unimplemented method 'equals_nec'");
+        return vLabel == other.vLabel && Arrays.equals(eLabels, other.eLabels) && m_nec == v_nec;
     }
 
     @Override
@@ -63,6 +62,28 @@ class AcgmCodeFragment
             }
         }
         return true;
+    }
+
+    @Override
+    public boolean bigger(CodeFragment other0) {
+        AcgmCodeFragment other = (AcgmCodeFragment) other0;
+
+        final int len = eLabels.length;
+        if (len != other.eLabels.length) {
+            throw new IllegalArgumentException("Compareing incompatible fragments.");
+        }
+
+        if (vLabel != other.vLabel) {
+            return false;
+        }
+
+        for (int i = 0; i < len; ++i) {
+            if (eLabels[i] == 0 && other.eLabels[i] > 0) {
+                return false;
+            }
+        }
+        return true;
+
     }
 
     @Override
@@ -122,6 +143,37 @@ class AcgmCodeFragment
     @Override
     public byte[] getelabel() {
         return this.eLabels;
+    }
+
+    @Override
+    public boolean contains_nec(CodeFragment other0, int m_nec, int v_nec) {
+
+        AcgmCodeFragment other = (AcgmCodeFragment) other0;
+
+        final int len = eLabels.length;
+        if (len != other.eLabels.length) {
+            throw new IllegalArgumentException("Compareing incompatible fragments.");
+        }
+
+        if (vLabel != other.vLabel) {
+            return false;
+        }
+
+        if (m_nec > v_nec)
+            return false;
+
+        for (int i = 0; i < len; ++i) {
+            if (other.eLabels[i] > 0 && eLabels[i] != other.eLabels[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public boolean equals_nec_sub(CodeFragment other0, int nec, int v_nec) {
+        AcgmCodeFragment other = (AcgmCodeFragment) other0;
+        return vLabel == other.vLabel && Arrays.equals(eLabels, other.eLabels) && nec >= v_nec;
     }
 
 }

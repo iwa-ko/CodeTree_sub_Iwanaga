@@ -8,18 +8,17 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.util.*;
 
-public class CodeTree implements Serializable {
+public class CodeTree_nec implements Serializable {
     GraphCode impl;
     public IndexNode root;
-    public static int delta;
+    public static int datasetSize;
     Random rand;
 
-    static int seed = 22;
-
-    public CodeTree(GraphCode impl, List<Graph> G, BufferedWriter bw, String dataset,
+    public CodeTree_nec(GraphCode impl, List<Graph> G, BufferedWriter bw, String dataset,
             BufferedWriter index) throws IOException {
 
         int limDepth = 0;
+        datasetSize = G.size();// test
         this.impl = impl;
         this.root = new IndexNode(null, null);
         rand = new Random(2);
@@ -62,25 +61,28 @@ public class CodeTree implements Serializable {
 
             case "ppigo":
                 limDepth = 7;
-                // rand = new Random(16);
-                // System.out.println(seed);
-                // rand = new Random(seed++);
+                // rand = new Random(1);
                 break;
         }
 
-        delta = limDepth;
-        for (Graph g : G) {
-            int start_vertice = rand.nextInt(g.order);
-            code = impl.computeCanonicalCode(g, start_vertice, limDepth);
-            root.addPath(code, g.id, false);
-        }
+        int totalOrder = 0;
+        int newOrder = 0;
 
-        // for (Graph g : G) {
-        // ArrayList<Integer> vertexIDs = new ArrayList<>();
-        // int start_vertice = rand.nextInt(g.order);
-        // code = impl.computeCanonicalCode_nec(g, start_vertice, limDepth, vertexIDs);
-        // root.addPath_nec(code, g, vertexIDs);
-        // }
+        for (Graph g : G) {
+            totalOrder += g.order;
+            Graph gn = g.shirinkNEC();
+            newOrder += gn.order;
+            G.set(g.id, gn);
+        }
+        System.out.println(dataset + ":" + (double) (totalOrder - newOrder) /
+                G.size());
+
+        for (Graph g : G) {
+            ArrayList<Integer> vertexIDs = new ArrayList<>();
+            int start_vertice = rand.nextInt(g.order);
+            code = impl.computeCanonicalCode_nec(g, start_vertice, limDepth, vertexIDs);
+            root.addPath_nec(code, g, vertexIDs);
+        }
 
         index.write(dataset + "," + limDepth + ","
                 + String.format("%.6f", (double) (System.nanoTime() - time) / 1000 / 1000) +
@@ -103,7 +105,7 @@ public class CodeTree implements Serializable {
         index.write(treesize + ",");
 
         List<Graph> leafGraphs = new ArrayList<>();
-        root.getLeafGraph(leafGraphs);
+        root.getLeafGraph_nec(leafGraphs);
         inclusionCheck2(impl, leafGraphs);
         root.removeTree();
         treesize = root.size();
@@ -117,7 +119,7 @@ public class CodeTree implements Serializable {
         System.out.println(
                 "remove node time :" + String.format("%.6f", (double) (System.nanoTime() - time) / 1000 / 1000));
 
-        root.addInfo();
+        root.addAdjLabels();
 
         start = System.nanoTime();
         System.out.println("グラフIDの計算中");
@@ -143,30 +145,6 @@ public class CodeTree implements Serializable {
         // }
     }
 
-    public CodeTree(GraphCode impl, List<Graph> G, int b) {
-        this.impl = impl;
-        this.root = new IndexNode(null, null);
-
-        System.out.print("Indexing");
-        for (int i = 0; i < G.size(); ++i) {
-            Graph g = G.get(i);
-
-            List<CodeFragment> code = impl.computeCanonicalCode(g, b);// 準正準コードを得る
-            root.addPath(code, i, true);
-
-            if (i % 100000 == 0) {
-                System.out.println();
-            } else if (i % 10000 == 0) {
-                System.out.print("*");
-            } else if (i % 1000 == 0) {
-                System.out.print(".");
-            }
-        }
-
-        System.out.println();
-        System.out.println("Tree size: " + root.size());
-    }
-
     private void inclusionCheck(GraphCode impl, List<Graph> G) {
         // root.addDescendantsLabels();
         for (Graph g : G) {
@@ -180,7 +158,7 @@ public class CodeTree implements Serializable {
             }
             BitSet gLabels = g.labels_Set();
             // root.addIDtoTree(g, impl, g.id);
-            root.addIDtoTree(g, impl, g.id, gLabels);
+            root.addIDtoTree_nec(g, impl, g.id, gLabels);
 
         }
     }
@@ -195,20 +173,16 @@ public class CodeTree implements Serializable {
                 continue;
 
             idList.add(g.id);
-            root.pruningEquivalentNodes(g, impl, g.id, idList, removeIDList);
+            root.pruningEquivalentNodes_nec(g, impl, g.id, idList, removeIDList);
 
         }
-    }
-
-    public List<Integer> supergraphSearch(Graph query) {
-        return root.search(query, impl);
     }
 
     public BitSet subgraphSearch(Graph query, BufferedWriter bw, int size, String mode, String dataset,
             BufferedWriter bwout, BufferedWriter allbw, List<Graph> G, int qsize,
             HashMap<Integer, ArrayList<String>> gMaps)
             throws IOException, InterruptedException {
-        return root.subsearch(query, impl, size, bw, mode, dataset, bwout, allbw, G, "Query", qsize, gMaps, delta);
+        return root.subsearch_nec(query, impl, size, bw, mode, dataset, bwout, allbw, G, "Query", qsize, gMaps);
     }
 }
 

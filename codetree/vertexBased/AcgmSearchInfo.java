@@ -61,6 +61,13 @@ final class AcgmSearchInfo
         }
     }
 
+    AcgmSearchInfo(AcgmSearchInfo src, Graph g, Integer v, int noOpne) {
+        final int n = src.vertexIDs.length;
+        vertexIDs = new int[n + 1];
+        System.arraycopy(src.vertexIDs, 0, vertexIDs, 0, n);
+        vertexIDs[n] = v;
+    }
+
     boolean contain(int[] vertexIDs, int num) {
         for (int i : vertexIDs) {
             if (i == num)

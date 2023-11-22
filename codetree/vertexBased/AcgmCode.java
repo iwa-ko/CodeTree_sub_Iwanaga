@@ -143,7 +143,6 @@ public class AcgmCode
         Random rand = new Random(0);
 
         for (int depth = 1; depth < limDepth; ++depth) {
-            // byte[] eLabels = new byte[depth];
             ArrayList<Integer> next = new ArrayList<>();
 
             for (AcgmSearchInfo info : infoList1) {
@@ -161,14 +160,6 @@ public class AcgmCode
                 int random = rand.nextInt(next.size());
                 int v2 = next.get(random);
 
-                // eLabels[depth - 1] = 1;
-
-                // for (int i = 0; i < depth; ++i) {
-                // final int u = info.vertexIDs[i];
-                // eLabels[i] = g.edges[u][v2];
-                // }
-
-                // AcgmCodeFragment frag = new AcgmCodeFragment(g.vertices[v2], eLabels);
                 AcgmCodeFragment frag = new AcgmCodeFragment(g.vertices[v2]);
 
                 infoList1.clear();
@@ -238,7 +229,7 @@ public class AcgmCode
         for (int v = info.open.nextSetBit(0); v != -1; v = info.open
                 .nextSetBit(++v)) {
 
-            if (!childrenVlabel.contains(g.vertices[v])) {// 未探索頂点のみが捜索対象
+            if (!childrenVlabel.contains(g.vertices[v])) {
                 continue;
             }
 
@@ -276,4 +267,108 @@ public class AcgmCode
         return frags;
     }
 
+    @Override
+    public List<CodeFragment> computeCanonicalCode_nec(Graph g, int start, int limDepth,
+            ArrayList<Integer> vertexIDs) {
+        final int n = g.order();
+        ArrayList<CodeFragment> code = new ArrayList<>(n);
+        ArrayList<AcgmSearchInfo> infoList1 = new ArrayList<>();
+
+        code.add(new AcgmCodeFragment(g.vertices[start], 0));
+        vertexIDs.add(start);
+
+        infoList1.add(new AcgmSearchInfo(g, start));
+
+        Random rand = new Random(0);
+
+        for (int depth = 1; depth < limDepth; ++depth) {
+            byte[] eLabels = new byte[depth];
+            ArrayList<Integer> next = new ArrayList<>();
+
+            for (AcgmSearchInfo info : infoList1) {
+
+                for (int v = 0; v < n; ++v) {
+                    if (info.open.get(v)) {
+                        next.add(v);
+                    }
+                }
+                if (next.size() == 0) {
+                    return code;
+
+                }
+
+                int random = rand.nextInt(next.size());
+                int v2 = next.get(random);
+
+                for (int i = 0; i < depth; ++i) {
+                    final int u = info.vertexIDs[i];
+                    eLabels[i] = g.edges[u][v2];
+                }
+
+                AcgmCodeFragment frag = new AcgmCodeFragment(g.vertices[v2], eLabels);
+                infoList1.clear();
+                infoList1.add(new AcgmSearchInfo(info, g, v2));
+                code.add(frag);
+                vertexIDs.add(v2);
+
+            }
+        }
+        return code;
+    }
+
+    BitSet openBitSet = new BitSet();
+
+    @Override
+    public List<Pair<CodeFragment, SearchInfo>> enumerateFollowableFragments(Graph g, SearchInfo info0,
+            HashSet<Byte> childrenVlabel, BitSet childEdgeFrag) {
+        ArrayList<Pair<CodeFragment, SearchInfo>> frags = new ArrayList<>();
+
+        // if (g.id == 599)
+        // System.out.println("contain time[ms]" + (double) time / 1000 / 1000);
+        AcgmSearchInfo info = (AcgmSearchInfo) info0;
+
+        final int depth = info.vertexIDs.length;
+
+        byte[] eLabels = new byte[depth];
+
+        openBitSet.clear();
+        for (int v = childEdgeFrag.nextSetBit(0); v != -1; v = childEdgeFrag.nextSetBit(++v)) {
+            int u = info.vertexIDs[v];
+            openBitSet.or(g.edgeBitset.get(u));
+        }
+
+        for (int v = openBitSet.nextSetBit(0); v != -1; v = openBitSet.nextSetBit(++v)) {
+
+            if (!childrenVlabel.contains(g.vertices[v])) {
+                continue;
+            }
+
+            if (contain(info.vertexIDs, v))
+                continue;
+
+            for (int i = 0; i < depth; ++i) {
+                final int u = info.vertexIDs[i];
+                eLabels[i] = g.edges[u][v];// 辺ラベル決定
+            }
+
+            frags.add(new Pair<CodeFragment, SearchInfo>(
+                    new AcgmCodeFragment(g.vertices[v], eLabels), new AcgmSearchInfo(info, g, v, 0)));
+        }
+
+        return frags;
+    }
+
+    static long time = 0;
+
+    boolean contain(int[] vertexIDs, int num) {
+        long t = System.nanoTime();
+        for (int i : vertexIDs) {
+            if (i == num) {
+                time += System.nanoTime() - t;
+                return true;
+            }
+        }
+        time += System.nanoTime() - t;
+        return false;
+    }
 }
