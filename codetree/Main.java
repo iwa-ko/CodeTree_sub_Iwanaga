@@ -22,7 +22,6 @@ class Main {
     private static int searchID = 1;
     private static int datasetID = 0;
     private static int datasetSize = 0;
-    private static String newGfuFilename;
 
     public static void main(String[] args) throws InterruptedException {
         if (searchID < 1 && searchID > 2) {
@@ -57,25 +56,6 @@ class Main {
                     final int maxedge = 64;
 
                     List<Graph> G = SdfFileReader.readFile_gfu(Paths.get(gfuFilename));
-
-                    // int totalOrder = 0;
-                    // int newOrder = 0;
-                    // // try (BufferedWriter bw2 =
-                    // Files.newBufferedWriter(Paths.get(newGfuFilename)))
-                    // // {
-
-                    // // gfuFilename = newGfuFilename;
-                    // for (Graph g : G) {
-                    // totalOrder += g.order;
-                    // Graph gn = g.shirinkNEC();
-                    // // writeGraph2Gfu(bw2, gn);
-                    // newOrder += gn.order;
-                    // G.set(g.id, gn);
-                    // // }
-                    // }
-                    // // System.out.println(totalOrder + ":" + newOrder);
-                    // System.out.println(dataset + ":" + (double) (totalOrder - newOrder) /
-                    // G.size());
 
                     for (int numOfEdge = minedge; numOfEdge <= maxedge; numOfEdge *= 2) {
                         ArrayList<Pair<Integer, Graph>> qset = new ArrayList<>();
@@ -234,99 +214,6 @@ class Main {
                                     bw.write("*********************************\n");
                                 }
                                 // }
-                            } else {
-
-                                System.out.println("tree1");
-                                CodeTree_nec tree = new CodeTree_nec(graphCode, G, bw, dataset, allfind);
-
-                                bw.write("Build tree(ms): "
-                                        + String.format("%.6f", (double) (System.nanoTime() - start) / 1000 / 1000) +
-                                        "\n");
-                                allfind.write(","
-                                        + String.format("%.6f", (double) (System.nanoTime() - start) / 1000 / 1000)
-                                        + "\n");
-
-                                int index = minedge;
-                                String mode = null;
-                                String data_out = null;
-
-                                HashMap<Integer, ArrayList<String>> gMaps = makeGmaps(gfuFilename);
-
-                                for (ArrayList<Pair<Integer, Graph>> Q_set : Q) {
-
-                                    // if (index <= maxedge) {
-                                    // index *= 2;
-                                    // continue;
-                                    // }
-                                    if (index > maxedge) {
-                                        index *= 2;
-                                        continue;
-                                    }
-
-                                    if ((datasetID == 3 && index == 64) || (datasetID == 6 && index == 64)) {
-                                        index *= 2;
-                                        continue;
-                                    }
-
-                                    // if ((datasetID == 3 && index >= 32) || (datasetID == 6 && index >= 32)
-                                    // || index >= 128) {
-                                    // index *= 2;
-                                    // continue;
-                                    // }
-                                    // if ((datasetID == 6 && index >= 32)) {
-                                    // index *= 2;
-                                    // continue;
-                                    // }
-
-                                    if (index <= maxedge) {
-                                        System.out.println("\nQ" + index + "R");
-                                        bw.write("Q" + index + "R\n");
-                                        bw2.write("Q" + index + "R\n");
-                                        allbw.write(dataset + ",Q" + index + "R,");
-                                        data_out = String.format("result/%s_%dR_data.csv", dataset,
-                                                index);
-                                        mode = "randomwalk";
-                                    } else {
-                                        System.out.println("\nQ" + index / 32 + "B");
-                                        bw.write("Q" + index / 32 + "B\n");
-                                        bw2.write("Q" + index / 32 + "B\n");
-                                        allbw.write(dataset + ",Q" + index / 32 + "B,");
-                                        data_out = String.format("result/%s_%dB_data.csv", dataset,
-                                                index / 32);
-                                        mode = "bfs";
-                                    }
-
-                                    try (BufferedWriter bwout = new BufferedWriter(
-                                            new OutputStreamWriter(new FileOutputStream(data_out), "UTF-8"));) {
-
-                                        start = System.nanoTime();
-
-                                        for (Pair<Integer, Graph> q : Q_set) {
-                                            if (q.left == 0) {
-                                                System.out.print("");
-                                            } else if (q.left % 50 == 0) {
-                                                System.out.print("*");
-                                            } else if (q.left % 10 == 0) {
-                                                System.out.print(".");
-                                            }
-                                            BitSet result = tree.subgraphSearch(q.right, bw, datasetSize, mode,
-                                                    dataset,
-                                                    bwout, allbw, G, q.right.size, gMaps);
-
-                                            bw2.write(
-                                                    q.left.toString() + " " + result.cardinality() + "個"
-                                                            + result.toString()
-                                                            + "\n");
-                                        }
-                                        final long time = System.nanoTime() - start;
-                                        bw.write("(A)*100+(C)+(D)+(E)+(α) 合計処理時間(ms): " + (time / 1000 / 1000) +
-                                                "\n");
-                                        index *= 2;
-                                        Q_set = null;
-                                    }
-                                    bw.write("*********************************\n");
-                                }
-
                             }
                         }
 
@@ -430,49 +317,42 @@ class Main {
 
         if (datasetID == 1) {
             gfuFilename = "pdbs.gfu";
-            newGfuFilename = "pdbs2.gfu";
             resultFilename = "PDBS_result.txt";
             dataset = "pdbs";
             datasetSize = 600;
             System.out.println("PDBS");
         } else if (datasetID == 2) {
             gfuFilename = "pcms.gfu";
-            newGfuFilename = "pcms2.gfu";
             resultFilename = "PCM_result.txt";
             dataset = "pcms";
             datasetSize = 200;
             System.out.println("PCM");
         } else if (datasetID == 3) {
             gfuFilename = "ppigo.gfu";
-            newGfuFilename = "ppigo2.gfu";
             resultFilename = "PPI_result.txt";
             dataset = "ppigo";
             datasetSize = 20;
             System.out.println("PPI");
         } else if (datasetID == 4) {
             gfuFilename = "IMDB-MULTI.gfu";
-            newGfuFilename = "IMDB-MULTI2.gfu";
             resultFilename = "IMDB_result.txt";
             dataset = "IMDB-MULTI";
             datasetSize = 1500;
             System.out.println("IMDB");
         } else if (datasetID == 5) {
             gfuFilename = "REDDIT-MULTI-5K.gfu";
-            newGfuFilename = "REDDIT-MULTI-5K2.gfu";
             resultFilename = "REDDIT_result.txt";
             dataset = "REDDIT-MULTI-5K";
             datasetSize = 4999;
             System.out.println("REDDIT");
         } else if (datasetID == 6) {
             gfuFilename = "COLLAB.gfu";
-            newGfuFilename = "COLLAB2.gfu";
             resultFilename = "COLLAB_result.txt";
             dataset = "COLLAB";
             datasetSize = 5000;
             System.out.println("COLLAB");
         } else if (datasetID == 0) {
             gfuFilename = "AIDS.gfu";
-            newGfuFilename = "AIDS2.gfu";
             resultFilename = "AIDS_result.txt";
             dataset = "AIDS";
             datasetSize = 40000;

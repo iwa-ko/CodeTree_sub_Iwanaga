@@ -25,9 +25,6 @@ public interface GraphCode {
 
         abstract List<ArrayList<CodeFragment>> computeCanonicalCode_adj(int labels_length);
 
-        abstract List<CodeFragment> computeCanonicalCode_nec(Graph g, int start_vertice, int limDepth,
-                        ArrayList<Integer> vertexIDs);
-
         abstract List<Pair<CodeFragment, SearchInfo>> enumerateFollowableFragments(Graph g, SearchInfo info,
                         HashSet<Byte> adjLabels, BitSet childEdgeFrag);
 
