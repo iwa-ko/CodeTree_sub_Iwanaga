@@ -274,8 +274,6 @@ public class AcgmCode
             HashSet<Byte> childrenVlabel, BitSet childEdgeFrag) {
         ArrayList<Pair<CodeFragment, SearchInfo>> frags = new ArrayList<>();
 
-        // if (g.id == 599)
-        // System.out.println("contain time[ms]" + (double) time / 1000 / 1000);
         AcgmSearchInfo info = (AcgmSearchInfo) info0;
 
         final int depth = info.vertexIDs.length;
@@ -309,17 +307,17 @@ public class AcgmCode
         return frags;
     }
 
-    static long time = 0;
+    // static long time = 0;
 
     boolean contain(int[] vertexIDs, int num) {
-        long t = System.nanoTime();
+        // long t = System.nanoTime();
         for (int i : vertexIDs) {
             if (i == num) {
-                time += System.nanoTime() - t;
+                // time += System.nanoTime() - t;
                 return true;
             }
         }
-        time += System.nanoTime() - t;
+        // time += System.nanoTime() - t;
         return false;
     }
 }

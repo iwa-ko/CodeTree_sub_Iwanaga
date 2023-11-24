@@ -38,6 +38,7 @@ public class IndexNode implements Serializable {
     static ArrayList<String> lines = new ArrayList<>();
     static final Path path = Paths.get("output2.txt");
 
+    static int a_in_count = 0;
     static int nodeIDcount = 0;
     static long search_time = 0;
     static int totoal_kai = 0;
@@ -71,6 +72,7 @@ public class IndexNode implements Serializable {
     static int in_count = 0;
     static int a_fil_count = 0;
     static long a_filterTime = 0;
+    static int veq_answer_num = 0;
 
     static long contains_search = 0;
     static long equals_search = 0;
@@ -202,30 +204,30 @@ public class IndexNode implements Serializable {
                             .nextSetBit(++trueIndex)) {
                         BitSet labelFrag = m.labelFiltering.get(trueIndex);
                         if (labelFrag != null) {
-                            Graph g = G.get(trueIndex);
-                            g.filterFlag.or(labelFrag);
+                            // Graph g = G.get(trueIndex);
+                            G.get(trueIndex).filterFlag.or(labelFrag);
                             deletedVsumPerq += labelFrag.cardinality();
                             query_per_nf_count += labelFrag.cardinality();
-                            if (g.order - g.filterFlag.cardinality() < qOrder) {
-                                Can.set(trueIndex, false);
-                                g.filterFlag.clear();
-                                labelFilteringGraph++;
-                            }
+                            // if (g.order - g.filterFlag.cardinality() < qOrder) {
+                            // Can.set(trueIndex, false);
+                            // g.filterFlag.clear();
+                            // labelFilteringGraph++;
+                            // }
                         }
                     }
                 } else {
                     for (int trueIndex : m.labelFiltering.keySet()) {
                         if (Can.get(trueIndex)) {
                             BitSet labelFrag = m.labelFiltering.get(trueIndex);
-
-                            Graph g = G.get(trueIndex);
+                            // Graph g = G.get(trueIndex);
+                            G.get(trueIndex).filterFlag.or(labelFrag);
                             deletedVsumPerq += labelFrag.cardinality();
                             query_per_nf_count += labelFrag.cardinality();
-                            if (g.order - g.filterFlag.cardinality() < qOrder) {
-                                Can.set(trueIndex, false);
-                                g.filterFlag.clear();
-                                labelFilteringGraph++;
-                            }
+                            // if (g.order - g.filterFlag.cardinality() < qOrder) {
+                            // Can.set(trueIndex, false);
+                            // g.filterFlag.clear();
+                            // labelFilteringGraph++;
+                            // }
                         }
                     }
                 }
@@ -239,9 +241,9 @@ public class IndexNode implements Serializable {
 
     static int labelFiltering_time = 0;
 
-    BitSet subsearch(Graph q, GraphCode impl, int size, BufferedWriter bw, String mode, String dataset,
+    BitSet subsearch(Graph q, GraphCode impl, int Gsize, BufferedWriter bw, String mode, String dataset,
             BufferedWriter bw_data, BufferedWriter allbw, List<Graph> G,
-            String directory, int qsize, HashMap<Integer, ArrayList<String>> gMaps, int delta)
+            String directory, int qsize, HashMap<Integer, ArrayList<String>> gMaps, int delta, BufferedWriter br_whole)
             throws IOException, InterruptedException {
 
         // if (q.id == 0)
@@ -258,12 +260,12 @@ public class IndexNode implements Serializable {
         traverse = true;
 
         List<Pair<IndexNode, SearchInfo>> infoList = impl.beginSearch(q, this);
-        if (delta <= q.order) {
+        if (delta >= q.order) {
             for (Pair<IndexNode, SearchInfo> info : infoList) {
-                info.left.subsearch2(q, info.right, impl);
+                info.left.subsearch(q, info.right, impl);
                 info.left.supersearch(q, info.right, impl);
-                if (!traverse)
-                    break;
+                // if (!traverse)
+                // break;
             }
         } else {
             for (Pair<IndexNode, SearchInfo> info : infoList) {
@@ -271,23 +273,23 @@ public class IndexNode implements Serializable {
             }
         }
         result.or(In);
+        Can.andNot(In);
+        // Can.xor(In);
+        a_in_count = In.cardinality();
+        in_count += a_in_count;
         infoList = null;
 
-        if (!traverse) {
-            Can.clear();
-        }
-
-        // System.out.println(Can.cardinality());
+        // if (!traverse) {
+        // Can.clear();
+        // }
 
         contains_search += System.nanoTime() - start;
 
-        if (!Can.isEmpty()) {
+        if (Can.cardinality() != 0) {
+            // SPper_q = 0;
             verfyNum++;
-
-            a_fil_count = size - Can.cardinality();
+            a_fil_count = Gsize - Can.cardinality();
             fil_count += a_fil_count;
-            in_count += In.cardinality();
-
             // doukeicount += Can.cardinality();
             a_filterTime = System.nanoTime() - start;
             search_time += a_filterTime;// filtering time
@@ -300,33 +302,19 @@ public class IndexNode implements Serializable {
 
             nodeFiltering_time += a_nodeFiltering_time;
 
-            // start = System.nanoTime();
-
-            // find_labelFiltering(G, q.id, qLabelMap);
-
-            // labelFiltering_time += System.nanoTime() - start;
-            // System.out.println(Can.cardinality());
-
-            // lab_fil_num += labelFilteringGraph;
-
             doukeicount += Can.cardinality();
-
-            // start = System.nanoTime();
-
-            // edgeFiltering_time += System.nanoTime() - start;
 
             write_file_for_Ver(G, q, gMaps);
 
-            verification_VEQ(directory, dataset, mode, q, qsize);
+            verification_VEQ(directory, dataset, mode, q, qsize, Gsize);
         } else {
-            a_fil_count = size - Can.cardinality();
+            a_fil_count = Gsize - Can.cardinality();
             fil_count += a_fil_count;
-            in_count += In.cardinality();
             doukeicount += Can.cardinality();
             a_filterTime = System.nanoTime() - start;
             search_time += a_filterTime;// filtering time
             nonfail++;
-            SPper_q = (double) In.cardinality() / result.cardinality();
+            SPper_q = 1;
             FPre = 1;
             FPper_q = 0;
             totoal_kai += result.cardinality();
@@ -338,7 +326,7 @@ public class IndexNode implements Serializable {
 
         init_traverse();
 
-        write_file_indiv(q, bw_data, size);
+        write_file_indiv(q, bw_data, Gsize);
 
         if (q.id == 99) {
             // System.out.println("\n候補グラフ数" + doukeicount);
@@ -346,11 +334,12 @@ public class IndexNode implements Serializable {
             System.out.println("削除できた頂点数/|Can(Q)|:" + (double) query_per_nf_count / (doukeicount + lab_fil_num));
             // System.out.println("削除できた総辺数:" + removeTotalSize);
             System.out.println("label filteirng graph num:" + ":" + (lab_fil_num));
-            System.out.println("label Num filteirng graph num:" + ":" + (labelNumFiltering));
+            // System.out.println("label Num filteirng graph num:" + ":" +
+            // (labelNumFiltering));
             System.out.println("query time:" + ":" + String.format("%.6f", ((double) search_time / 1000 / 1000 +
                     verification_time + (double) (edgeFiltering_time + nodeFiltering_time) / 1000 / 1000) / 100));
 
-            write_file(allbw, bw, size);
+            write_file(allbw, bw, Gsize, br_whole);
             init_param();
             removeTotalGraphs = 0;
             edgeFiltering_time = 0;
@@ -367,21 +356,19 @@ public class IndexNode implements Serializable {
     private void write_file_for_Ver(List<Graph> D, Graph q, HashMap<Integer, ArrayList<String>> gMaps) {
         long time = System.nanoTime();
         try (BufferedWriter bw2 = Files.newBufferedWriter(out)) {
-
             for (int trueIndex = Can.nextSetBit(0); trueIndex != -1; trueIndex = Can
                     .nextSetBit(++trueIndex)) {
-
                 Graph g = D.get(trueIndex);
-
                 if (g.filterFlag.cardinality() >= 0) {
-
                     int newSize = 0;
                     int newOrder = 0;
                     int[] map = new int[g.order];
-
+                    int[] pam = new int[g.order];
+                    boolean allZeros;
+                    int[] adj;
                     for (int v = g.filterFlag.nextClearBit(0); v < g.order; v = g.filterFlag.nextClearBit(++v)) {
-                        boolean allZeros = true; // 一行が全て0かどうかを示すフラグ
-                        int[] adj = g.adjList[v];
+                        allZeros = true; // 一行が全て0かどうかを示すフラグ
+                        adj = g.adjList[v];
                         for (int u : adj) {
                             if (g.filterFlag.get(u))
                                 continue;
@@ -389,21 +376,23 @@ public class IndexNode implements Serializable {
                             allZeros = false; // 一行に0以外の要素がある場合、フラグをfalseに設定
                         }
                         if (!allZeros) {
+                            pam[v] = newOrder;
                             map[newOrder++] = v;
                         }
                     }
                     newSize /= 2;
-                    g.filterFlag = new BitSet();
 
                     removeTotalSize += g.size - newSize;
                     if (g.size - newSize != 0)
                         removeTotalGraphs++;
 
                     if (newOrder == 0 || newSize == 0) {
+                        g.filterFlag = new BitSet();
                         continue;
                     }
 
                     if (q.order > newOrder || q.size > newSize) {
+                        g.filterFlag = new BitSet();
                         continue;
                     }
                     can.add(trueIndex);
@@ -419,37 +408,20 @@ public class IndexNode implements Serializable {
                     bw2.write(newSize + "\n");
 
                     for (int i = 0; i < newOrder; i++) {
-                        for (int j = i; j < newOrder; j++) {
-                            if (g.edges[map[i]][map[j]] > 0) {
-                                bw2.write(i + " " + j + "\n");
-                            }
+                        adj = g.adjList[map[i]];
+                        for (int j : adj) {
+                            if (g.filterFlag.get(j) || i > pam[j])
+                                continue;
+                            bw2.write(i + " " + pam[j] + "\n");
                         }
                     }
+                    g.filterFlag = new BitSet();
 
                 } else {
                     can.add(trueIndex);
                     for (String line : gMaps.get(trueIndex)) {
                         bw2.write(line + "\n");
                     }
-                    // can.add(trueIndex);
-                    // String line = "#" + g.id + "\n";
-                    // bw2.write(line);
-                    // line = g.order + "\n";
-                    // bw2.write(line);
-                    // for (int i = 0; i < g.order; i++) {
-
-                    // bw2.write(g.vertices[i] + "\n");
-                    // }
-
-                    // bw2.write(g.size + "\n");
-
-                    // for (int i = 0; i < g.size; i++) {
-                    // for (int j = i; j < g.size; j++) {
-                    // if (g.edges[i][j] > 0) {
-                    // bw2.write(i + " " + j + "\n");
-                    // }
-                    // }
-                    // }
                 }
 
             }
@@ -480,25 +452,6 @@ public class IndexNode implements Serializable {
         write_time += System.nanoTime() - time;
     }
 
-    private void subsearch2(Graph q, SearchInfo info, GraphCode impl) {
-        Can.and(matchGraphIndicesBitSet);
-        traverse_num++;
-
-        if (children.size() == 0) {
-            return;
-        }
-
-        List<Pair<CodeFragment, SearchInfo>> nextFrags = impl.enumerateFollowableFragments(q, info, adjLabels);
-
-        for (IndexNode m : children) {
-            for (Pair<CodeFragment, SearchInfo> frag : nextFrags) {
-                if (frag.left.contains(m.frag)) {
-                    m.subsearch(q, frag.right, impl);
-                }
-            }
-        }
-    }
-
     private void subsearch(Graph q, SearchInfo info, GraphCode impl) {
         Can.and(matchGraphIndicesBitSet);
         traverse_num++;
@@ -507,14 +460,39 @@ public class IndexNode implements Serializable {
         }
 
         List<Pair<CodeFragment, SearchInfo>> nextFrags = impl.enumerateFollowableFragments(q, info, adjLabels);
+        // List<Pair<CodeFragment, SearchInfo>> nextFrags =
+        // impl.enumerateFollowableFragments(q, info, adjLabels,
+        // childEdgeFrag);
 
         for (IndexNode m : children) {
             for (Pair<CodeFragment, SearchInfo> frag : nextFrags) {
                 // if (m.frag.equals(frag.left)) {
                 if (frag.left.contains(m.frag)) {
                     m.subsearch(q, frag.right, impl);
-                    if (!traverse)
-                        return;
+                }
+            }
+        }
+    }
+
+    private void equalsearch(Graph q, SearchInfo info, GraphCode impl) {
+        Can.and(matchGraphIndicesBitSet);
+        traverse_num++;
+        if (depth == q.order) {
+            In.or(matchGraphIndicesBitSet);
+            // result.or(matchGraphIndicesBitSet);
+            // traverse = false;
+            return;
+        }
+        if (children.size() == 0) {
+            return;
+        }
+
+        List<Pair<CodeFragment, SearchInfo>> nextFrags = impl.enumerateFollowableFragments(q, info, adjLabels);
+
+        for (IndexNode m : children) {
+            for (Pair<CodeFragment, SearchInfo> frag : nextFrags) {
+                if (m.frag.equals(frag.left)) {
+                    m.equalsearch(q, frag.right, impl);
                 }
             }
         }
@@ -523,7 +501,8 @@ public class IndexNode implements Serializable {
     private void supersearch(Graph q, SearchInfo info, GraphCode impl) {
         if (depth == q.order) {
             In.or(matchGraphIndicesBitSet);
-            traverse = false;
+            // result.or(matchGraphIndicesBitSet);
+            // traverse = false;
             return;
         }
 
@@ -535,17 +514,16 @@ public class IndexNode implements Serializable {
 
         for (IndexNode m : children) {
             for (Pair<CodeFragment, SearchInfo> frag : nextFrags) {
-                // if (frag.left.bigger(m.frag)) {
-                if (frag.left.contains(m.frag)) {
+                // if (frag.left.contains(m.frag)) {
+                if (m.frag.contains(frag.left)) {
+                    // if (m.frag.equals(frag.left)) {
                     m.supersearch(q, frag.right, impl);
-                    if (!traverse)
-                        return;
+                    // if (!traverse)
+                    // return;
                 }
             }
         }
     }
-
-    BitSet G = new BitSet();
 
     static int traverse_cou = 0;
 
@@ -558,9 +536,8 @@ public class IndexNode implements Serializable {
     }
 
     private void addIDtoTree(Graph g, SearchInfo info, GraphCode impl, int id, BitSet gLabels) {
-        traverse_cou++;
+        // traverse_cou++;
         matchGraphIndicesBitSet.set(id, true);
-
         if (depth == 1) {
             if (labelFiltering.get(id) == null) {
                 labelFiltering.put(id, new BitSet(g.order));
@@ -768,7 +745,7 @@ public class IndexNode implements Serializable {
         can.clear();
     }
 
-    private void verification_VEQ(String directory, String dataset, String mode, Graph q, int size)
+    private void verification_VEQ(String directory, String dataset, String mode, Graph q, int size, int Gsize)
             throws InterruptedException {
         long start = System.nanoTime();
 
@@ -823,24 +800,19 @@ public class IndexNode implements Serializable {
                 query_per_sum += query_per_veq;
 
                 long start_read = System.nanoTime();
+                veq_answer_num = 0;
                 readAnswer(path, can, result);
                 read_time += System.nanoTime() - start_read;
 
-                SPper_q = (double) In.cardinality() / result.cardinality();
+                FPre = (double) (Gsize - Can.cardinality() - a_in_count) /
+                        (Gsize - result.cardinality());
 
-                if (Can.cardinality() != 0) {
-                    FPper_q = (double) (Can.cardinality() - result.cardinality()) /
-                            (Can.cardinality());
-                }
+                FPper_q = (double) (veq_answer_num) / (Can.cardinality());
 
-                if (0 != Can.cardinality()) {
-                    FPre = (double) result.cardinality() / Can.cardinality();
-                } else {
-                    FPre = 1;
-                }
+                SPper_q = (double) In.cardinality() / (result.cardinality());
 
-                if (size - veq_per_Can != 0) {
-                    filpertime = (size - veq_per_Can) / (((double) a_filterTime / 1000 / 1000) +
+                if (Gsize - veq_per_Can != 0) {
+                    filpertime = (Gsize - veq_per_Can) / (((double) a_filterTime / 1000 / 1000) +
                             fileter_time);
                 }
 
@@ -865,6 +837,7 @@ public class IndexNode implements Serializable {
             while ((line = br.readLine()) != null) {
                 id = Integer.parseInt(line);
                 result.set(can.get(id));
+                veq_answer_num++;
             }
             br.close();
         } catch (Exception e) {
@@ -895,7 +868,7 @@ public class IndexNode implements Serializable {
                         query_per_veq)
                 +
                 "," + String.format("%.8f", query_per_time + (double) a_nodeFiltering_time / 1000 / 1000) + ","
-                + a_fil_count + "," + In.cardinality() + "," +
+                + a_fil_count + "," + a_in_count + "," +
                 Can.cardinality() + "," + veq_per_Can + ","
                 + (Can.cardinality() - veq_per_Can) + ","
                 + result.cardinality() + "," +
@@ -920,9 +893,43 @@ public class IndexNode implements Serializable {
 
     }
 
-    private void write_file(BufferedWriter allbw, BufferedWriter bw, int size) {
+    private void write_file(BufferedWriter allbw, BufferedWriter bw, int size, BufferedWriter br_whole) {
         try {
             allbw.write(String.format("%.5f", FP2 / nonfail) + "," +
+                    String.format("%.5f", FP / nonfail) + ","
+                    + String.format("%.5f", SP / nonfail) + ","
+                    + String.format("%.6f", (double) search_time / 1000 / 1000 / nonfail) + ","// fil
+                    + String.format("%.6f", CT_verify / nonfail) + ","// ver
+                    // + String.format("%.6f", ((double) search_time / 1000 / 1000 + // query
+                    // verification_time) / 100)
+                    + String.format("%.6f", ((double) search_time / 1000 / 1000 +
+                            verification_time + (double) (edgeFiltering_time + nodeFiltering_time) / 1000 / 1000) / 100)
+                    + ","
+                    + String.format("%.6f", (double) contains_search / 1000 / 1000 / nonfail) + ","// tree1
+                    + String.format("%.6f", (double) equals_search / 1000 / 1000 / nonfail) + ","// tree2
+                    + String.format("%.6f", (double) edgeFiltering_time / 1000 / 1000 / nonfail) + ","// edge fil
+                    + String.format("%.6f", (double) nodeFiltering_time / 1000 / 1000 / nonfail) + ","// node fil
+                    + String.format("%.1f", (double) totoal_kai) + ","
+                    + String.format("%.1f", (double) doukeicount) + ","
+                    + String.format("%.1f", (double) fil_count) + ","
+                    + String.format("%.1f", (double) lab_fil_num) + ","
+                    + String.format("%.1f", (double) labelNumFiltering) + ","
+                    // + String.format("%.1f", (double) removeTotalGraphs / nonfail) + ","//
+                    // 何かを削除できたグラフ数
+                    + String.format("%.1f", (double) query_per_nf_count) + ","// 削除できた頂点数
+                    + String.format("%.1f", (double) filtering_edge_num) + ","// 削除できた辺数
+                    + String.format("%.1f", (double) removeTotalSize) + ","// 削除できた総辺数
+
+                    + String.format("%.6f", (((double) search_time / 1000 / 1000) / (size *
+                            nonfail - doukeicount)))
+                    + "," + (size * nonfail - doukeicount) + ","
+                    + String.format("%.6f",
+                            (size * nonfail - veq_Can_total)
+                                    / (((double) search_time / 1000 / 1000) + query_per_veqF))
+                    + "," + (size * nonfail - veq_Can_total) + "," + nonfail + "," + verfyNum
+                    + "\n");
+
+            br_whole.write(String.format("%.5f", FP2 / nonfail) + "," +
                     String.format("%.5f", FP / nonfail) + ","
                     + String.format("%.5f", SP / nonfail) + ","
                     + String.format("%.6f", (double) search_time / 1000 / 1000 / nonfail) + ","// fil
@@ -1039,9 +1046,7 @@ public class IndexNode implements Serializable {
         removeTotalSize = 0;
         removeTotalGraphs = 0;
         query_per_nf_count = 0;
-
         deletedVsumPerq = 0;
-
         nonfail = 0;
         CT_verify = 0;
         doukeicount = 0;
@@ -1065,7 +1070,6 @@ public class IndexNode implements Serializable {
         query_per_veq = 0;
         fileter_time = 0;
         verify_time = 0;
-
     }
 
     List<Integer> search(Graph q, GraphCode impl) {

@@ -33,12 +33,17 @@ class Main {
 
         System.out.println("max: " + max / 1024 / 1024 / 1024);
         String allindex = String.format("result/all_index.csv", dataset);
+        String wholeresult = String.format("result/all_result.csv", dataset);
         Path writeindex = Paths.get(allindex);
-        try (BufferedWriter allfind = Files.newBufferedWriter(writeindex)) {
+        Path writewhole = Paths.get(wholeresult);
+        try (BufferedWriter allfind = Files.newBufferedWriter(writeindex);
+                BufferedWriter br_whole = Files.newBufferedWriter(writewhole)) {
             allfind.write(
                     "dataset,depth,addPathtoTree(ms),Tree_size,Tree_size(new),remove_time(ms),addIDtoTree(ms),Build_tree(ms)\n");
+            br_whole.write(
+                    "dataset,query_set,FP_ratio,A/C,SP,filtering_time(ms),verification_time(ms),query_time(ms),tree1_search_time(ms),tree2_search_time(ms),edge_fil_time(ms),node_fil_time(ms),|A(Q)|,|Can(Q)|,Filtering Graphs,Node Filteirng Graphs,Label Filteirng Graphs,Num deleted Vertices,Num Deleted Edges,total deleted edges Num,codetree_filtime/fil_num,codetree_fil_num,allfil_num/allfil_time,allfil_num,nonfail,verify num\n");
 
-            for (datasetID = 0; datasetID <= 6; datasetID++) {
+            for (datasetID = 2; datasetID <= 2; datasetID++) {
 
                 boolean nec = false;
                 if (datasetID < 0 || datasetID > 6) {
@@ -170,6 +175,7 @@ class Main {
                                         bw.write("Q" + index + "R\n");
                                         bw2.write("Q" + index + "R\n");
                                         allbw.write(dataset + ",Q" + index + "R,");
+                                        br_whole.write(dataset + ",Q" + index + "R,");
                                         data_out = String.format("result/%s_%dR_data.csv", dataset,
                                                 index);
                                         mode = "randomwalk";
@@ -178,6 +184,7 @@ class Main {
                                         bw.write("Q" + index / 32 + "B\n");
                                         bw2.write("Q" + index / 32 + "B\n");
                                         allbw.write(dataset + ",Q" + index / 32 + "B,");
+                                        br_whole.write(dataset + ",Q" + index / 32 + "B,");
                                         data_out = String.format("result/%s_%dB_data.csv", dataset,
                                                 index / 32);
                                         mode = "bfs";
@@ -198,7 +205,7 @@ class Main {
                                             }
                                             BitSet result = tree.subgraphSearch(q.right, bw, datasetSize, mode,
                                                     dataset,
-                                                    bwout, allbw, G, q.right.size, gMaps);
+                                                    bwout, allbw, G, q.right.size, gMaps, br_whole);
 
                                             bw2.write(
                                                     q.left.toString() + " " + result.cardinality() + "個"

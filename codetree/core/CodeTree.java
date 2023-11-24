@@ -53,11 +53,11 @@ public class CodeTree implements Serializable {
                 break;
 
             case "IMDB-MULTI":
-                limDepth = 3;
+                limDepth = 5;
                 break;
 
             case "pcms":
-                limDepth = 6;
+                limDepth = 5;
                 break;
 
             case "ppigo":
@@ -69,10 +69,13 @@ public class CodeTree implements Serializable {
         }
 
         delta = limDepth;
+        int loop = 1;
         for (Graph g : G) {
-            int start_vertice = rand.nextInt(g.order);
-            code = impl.computeCanonicalCode(g, start_vertice, limDepth);
-            root.addPath(code, g.id, false);
+            for (int l = 0; l < loop; l++) {
+                int start_vertice = rand.nextInt(g.order);
+                code = impl.computeCanonicalCode(g, start_vertice, limDepth);
+                root.addPath(code, g.id, false);
+            }
         }
 
         // for (Graph g : G) {
@@ -206,9 +209,10 @@ public class CodeTree implements Serializable {
 
     public BitSet subgraphSearch(Graph query, BufferedWriter bw, int size, String mode, String dataset,
             BufferedWriter bwout, BufferedWriter allbw, List<Graph> G, int qsize,
-            HashMap<Integer, ArrayList<String>> gMaps)
+            HashMap<Integer, ArrayList<String>> gMaps, BufferedWriter br_whole)
             throws IOException, InterruptedException {
-        return root.subsearch(query, impl, size, bw, mode, dataset, bwout, allbw, G, "Query", qsize, gMaps, delta);
+        return root.subsearch(query, impl, size, bw, mode, dataset, bwout, allbw, G, "Query", qsize, gMaps, delta,
+                br_whole);
     }
 }
 
