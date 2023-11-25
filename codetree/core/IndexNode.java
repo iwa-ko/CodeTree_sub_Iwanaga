@@ -804,8 +804,12 @@ public class IndexNode implements Serializable {
                 readAnswer(path, can, result);
                 read_time += System.nanoTime() - start_read;
 
-                FPre = (double) (Gsize - Can.cardinality() - a_in_count) /
-                        (Gsize - result.cardinality());
+                if (Gsize == result.cardinality()) {
+                    FPre = 1;
+                } else {
+                    FPre = (double) (Gsize - Can.cardinality() - a_in_count) /
+                            (Gsize - result.cardinality());
+                }
 
                 FPper_q = (double) (veq_answer_num) / (Can.cardinality());
 
@@ -849,7 +853,7 @@ public class IndexNode implements Serializable {
     private void write_file_indiv(Graph q, BufferedWriter bw_data, int size) throws IOException {
         if (q.id == 0) {
             bw_data.write(
-                    "query_id,FP,A/C,SP,filtering_time(ms),node filtering time(ms),filtering_time(ms)(VEQ),verification_time(ms)(VEQ),VEQs_time(ms),query_time(ms),filtering_num,inclusion_num,Candidate_num,VEQs_Candidate_num,VEQs_filtering_num,answer_num,|Σ(p)|,node graph fil,label graph fil,deleted Vsum/|Can|\n");
+                    "query_id,FP,(G-C)/(G-A),SP,filtering_time(ms),node filtering time(ms),filtering_time(ms)(VEQ),verification_time(ms)(VEQ),VEQs_time(ms),query_time(ms),filtering_num,inclusion_num,Candidate_num,VEQs_Candidate_num,VEQs_filtering_num,answer_num,|Σ(p)|,node graph fil,label graph fil,deleted Vsum/|Can|\n");
             // "query_id,FP,A/C,SP,filtering_time(ms),filtering_time(ms)(VEQ),verification_time(ms)(VEQ),VEQs_time(ms),query_time(ms),filtering_num,inclusion_num,Candidate_num,VEQs_Candidate_num,VEQs_filtering_num,answer_num,|G|,filter_time/filter_num\n");
 
         }

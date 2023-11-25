@@ -43,7 +43,7 @@ class Main {
             br_whole.write(
                     "dataset,query_set,FP_ratio,A/C,SP,filtering_time(ms),verification_time(ms),query_time(ms),tree1_search_time(ms),tree2_search_time(ms),edge_fil_time(ms),node_fil_time(ms),|A(Q)|,|Can(Q)|,Filtering Graphs,Node Filteirng Graphs,Label Filteirng Graphs,Num deleted Vertices,Num Deleted Edges,total deleted edges Num,codetree_filtime/fil_num,codetree_fil_num,allfil_num/allfil_time,allfil_num,nonfail,verify num\n");
 
-            for (datasetID = 2; datasetID <= 2; datasetID++) {
+            for (datasetID = 3; datasetID <= 3; datasetID++) {
 
                 boolean nec = false;
                 if (datasetID < 0 || datasetID > 6) {
@@ -58,7 +58,7 @@ class Main {
                     List<ArrayList<Pair<Integer, Graph>>> Q = new ArrayList<>();
                     final int querysize = 100;
                     final int minedge = 4;
-                    final int maxedge = 64;
+                    final int maxedge = 16;
 
                     List<Graph> G = SdfFileReader.readFile_gfu(Paths.get(gfuFilename));
 
@@ -105,7 +105,7 @@ class Main {
                                 // of graphs to delete,Number of vertices removed,Num Deleted Edges,total number
                                 // of deleted
                                 // edges,codetree_filtime/fil_num,codetree_fil_num,allfil_num/allfil_time,allfil_num,nonfail\n");
-                                "dataset,query_set,FP_ratio,A/C,SP,filtering_time(ms),verification_time(ms),query_time(ms),tree1_search_time(ms),tree2_search_time(ms),edge_fil_time(ms),node_fil_time(ms),|A(Q)|,|Can(Q)|,Filtering Graphs,Node Filteirng Graphs,Label Filteirng Graphs,Num deleted Vertices,Num Deleted Edges,total deleted edges Num,codetree_filtime/fil_num,codetree_fil_num,allfil_num/allfil_time,allfil_num,nonfail,verify num\n");
+                                "dataset,query_set,FP_ratio,(G-C)/(G-A),SP,filtering_time(ms),verification_time(ms),query_time(ms),tree1_search_time(ms),tree2_search_time(ms),edge_fil_time(ms),node_fil_time(ms),|A(Q)|,|Can(Q)|,Filtering Graphs,Node Filteirng Graphs,Label Filteirng Graphs,Num deleted Vertices,Num Deleted Edges,total deleted edges Num,codetree_filtime/fil_num,codetree_fil_num,allfil_num/allfil_time,allfil_num,nonfail,verify num\n");
 
                         System.out.println(" ");
                         resultFilename = String.format("result/%s_result.txt",
@@ -138,6 +138,9 @@ class Main {
                                 int index = minedge;
                                 String mode = null;
                                 String data_out = null;
+                                int[] adjust = new int[Q.size() / 2];
+                                int count = 0;
+                                int count2 = 0;
 
                                 for (ArrayList<Pair<Integer, Graph>> Q_set : Q) {
 
@@ -171,6 +174,7 @@ class Main {
                                     // }
 
                                     if (index <= maxedge) {
+                                        adjust[count++] = index;
                                         System.out.println("\nQ" + index + "R");
                                         bw.write("Q" + index + "R\n");
                                         bw2.write("Q" + index + "R\n");
@@ -180,13 +184,15 @@ class Main {
                                                 index);
                                         mode = "randomwalk";
                                     } else {
-                                        System.out.println("\nQ" + index / 32 + "B");
-                                        bw.write("Q" + index / 32 + "B\n");
-                                        bw2.write("Q" + index / 32 + "B\n");
-                                        allbw.write(dataset + ",Q" + index / 32 + "B,");
-                                        br_whole.write(dataset + ",Q" + index / 32 + "B,");
+                                        int size = adjust[count2++];
+
+                                        System.out.println("\nQ" + size + "B");
+                                        bw.write("Q" + size + "B\n");
+                                        bw2.write("Q" + size + "B\n");
+                                        allbw.write(dataset + ",Q" + size + "B,");
+                                        br_whole.write(dataset + ",Q" + size + "B,");
                                         data_out = String.format("result/%s_%dB_data.csv", dataset,
-                                                index / 32);
+                                                size);
                                         mode = "bfs";
                                     }
 
