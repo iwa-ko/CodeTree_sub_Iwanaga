@@ -59,7 +59,7 @@ public class IndexNode implements Serializable {
     static double veq_per_Can = 0;
     static double CT_verify = 0;
     static int nonfail = 0;
-    static double FPper_q = 0;
+    static double FPratio_q = 0;
     static double FPre = 0;
     static double filpertime = 0;
     static double SPper_q = 0;
@@ -67,7 +67,7 @@ public class IndexNode implements Serializable {
     static Process p;
     static double FP = 0;
     static double SP = 0;
-    static double FP2 = 0;
+    static double FPratio = 0;
     static int fil_count = 0;
     static int in_count = 0;
     static int a_fil_count = 0;
@@ -316,10 +316,10 @@ public class IndexNode implements Serializable {
             nonfail++;
             SPper_q = 1;
             FPre = 1;
-            FPper_q = 0;
+            FPratio_q = 0;
             totoal_kai += result.cardinality();
             FP += FPre;
-            FP2 += FPper_q;
+            FPratio += FPratio_q;
             SP += SPper_q;
             query_per_time = (double) a_filterTime / 1000 / 1000;
         }
@@ -765,7 +765,7 @@ public class IndexNode implements Serializable {
                 fileter_time = 0;// veq
                 verify_time = 0;// veq
                 a_filterTime = 0;
-                FPper_q = 0;
+                FPratio_q = 0;
                 FPre = 0;
                 filpertime = 0;
                 SPper_q = 0;
@@ -811,7 +811,7 @@ public class IndexNode implements Serializable {
                             (Gsize - result.cardinality());
                 }
 
-                FPper_q = (double) (veq_answer_num) / (Can.cardinality());
+                FPratio_q = (double) (veq_answer_num) / (Can.cardinality());
 
                 SPper_q = (double) In.cardinality() / (result.cardinality());
 
@@ -830,7 +830,7 @@ public class IndexNode implements Serializable {
         totoal_kai += result.cardinality();
         veq_Can_total += veq_per_Can;
         FP += FPre;
-        FP2 += FPper_q;
+        FPratio += FPratio_q;
         SP += SPper_q;
     }
 
@@ -853,7 +853,10 @@ public class IndexNode implements Serializable {
     private void write_file_indiv(Graph q, BufferedWriter bw_data, int size) throws IOException {
         if (q.id == 0) {
             bw_data.write(
-                    "query_id,FP,(G-C)/(G-A),SP,filtering_time(ms),node filtering time(ms),filtering_time(ms)(VEQ),verification_time(ms)(VEQ),VEQs_time(ms),query_time(ms),filtering_num,inclusion_num,Candidate_num,VEQs_Candidate_num,VEQs_filtering_num,answer_num,|Σ(p)|,node graph fil,label graph fil,deleted Vsum/|Can|\n");
+                    // "query_id,FP,(G-C)/(G-A),SP,filtering_time(ms),node filtering
+                    // time(ms),filtering_time(ms)(VEQ),verification_time(ms)(VEQ),VEQs_time(ms),query_time(ms),filtering_num,inclusion_num,Candidate_num,VEQs_Candidate_num,VEQs_filtering_num,answer_num,|Σ(p)|,node
+                    // graph fil,label graph fil,deleted Vsum/|Can|\n");
+                    "query_id,FP,SP,filtering_time(ms),node filtering time(ms),filtering_time(ms)(VEQ),verification_time(ms)(VEQ),VEQs_time(ms),query_time(ms),filtering_num,inclusion_num,Candidate_num,VEQs_Candidate_num,VEQs_filtering_num,answer_num,|Σ(p)|,node graph fil,label graph fil,deleted Vsum/|Can|\n");
             // "query_id,FP,A/C,SP,filtering_time(ms),filtering_time(ms)(VEQ),verification_time(ms)(VEQ),VEQs_time(ms),query_time(ms),filtering_num,inclusion_num,Candidate_num,VEQs_Candidate_num,VEQs_filtering_num,answer_num,|G|,filter_time/filter_num\n");
 
         }
@@ -863,7 +866,7 @@ public class IndexNode implements Serializable {
             deletedVsumPerqPerg = (double) deletedVsumPerq / (Can.cardinality() + labelFilteringGraph);
         }
 
-        bw_data.write(q.id + "," + FPper_q + "," + FPre + ","
+        bw_data.write(q.id + "," + FPratio_q + "," + FPre + ","
                 + SPper_q + ","
                 + String.format("%.8f", (double) a_filterTime / 1000 / 1000) + ","
                 + String.format("%.8f", (double) a_nodeFiltering_time / 1000 / 1000) + ","
@@ -899,8 +902,8 @@ public class IndexNode implements Serializable {
 
     private void write_file(BufferedWriter allbw, BufferedWriter bw, int size, BufferedWriter br_whole) {
         try {
-            allbw.write(String.format("%.5f", FP2 / nonfail) + "," +
-                    String.format("%.5f", FP / nonfail) + ","
+            allbw.write(String.format("%.5f", FPratio / nonfail) + ","
+                    + String.format("%.5f", FP / nonfail) + ","
                     + String.format("%.5f", SP / nonfail) + ","
                     + String.format("%.6f", (double) search_time / 1000 / 1000 / nonfail) + ","// fil
                     + String.format("%.6f", CT_verify / nonfail) + ","// ver
@@ -933,8 +936,8 @@ public class IndexNode implements Serializable {
                     + "," + (size * nonfail - veq_Can_total) + "," + nonfail + "," + verfyNum
                     + "\n");
 
-            br_whole.write(String.format("%.5f", FP2 / nonfail) + "," +
-                    String.format("%.5f", FP / nonfail) + ","
+            br_whole.write(String.format("%.5f", FPratio / nonfail) + ","
+                    + String.format("%.5f", FP / nonfail) + ","
                     + String.format("%.5f", SP / nonfail) + ","
                     + String.format("%.6f", (double) search_time / 1000 / 1000 / nonfail) + ","// fil
                     + String.format("%.6f", CT_verify / nonfail) + ","// ver
@@ -990,7 +993,7 @@ public class IndexNode implements Serializable {
             bw.write("Number of Answer Graphs: " + totoal_kai + "\n");
             bw.write("filtering Presison : " + String.format("%.5f", FP / nonfail) +
                     "\n");
-            bw.write("FP ratio : " + String.format("%.5f", FP2 / nonfail) + "\n");
+            bw.write("FP ratio : " + String.format("%.5f", FPratio / nonfail) + "\n");
             bw.write("inclusion Presison : " + String.format("%.5f", SP) + "%" + "\n");
 
             // bw.write(
@@ -1065,7 +1068,7 @@ public class IndexNode implements Serializable {
         query_per_sum = 0;
         veq_Can_total = 0;
         FP = 0;
-        FP2 = 0;
+        FPratio = 0;
         SP = 0;
         fil_count = 0;
         in_count = 0;
