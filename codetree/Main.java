@@ -41,7 +41,7 @@ class Main {
             allfind.write(
                     "dataset,depth,addPathtoTree(ms),Tree_size,Tree_size(new),remove_time(ms),addIDtoTree(ms),Build_tree(ms)\n");
             br_whole.write(
-                    "dataset,query_set,FP_ratio,G-C/G-A,SP,filtering_time(ms),verification_time(ms),query_time(ms),tree1_search_time(ms),tree2_search_time(ms),edge_fil_time(ms),node_fil_time(ms),|A(Q)|,|Can(Q)|,Filtering Graphs,Node Filteirng Graphs,Label Filteirng Graphs,Num deleted Vertices,Num Deleted Edges,total deleted edges Num,codetree_filtime/fil_num,codetree_fil_num,allfil_num/allfil_time,allfil_num,nonfail,verify num\n");
+                    "dataset,query_set,FP_ratio,G-C/G-A,SP,filtering_time(ms),verification_time(ms),query_time(ms),tree1_search_time(ms),tree2_search_time(ms),edge_fil_time(ms),node_fil_time(ms),|In(Q)|,|A(Q)|,|Can(Q)|,Filtering Graphs,Node Filteirng Graphs,Label Filteirng Graphs,Num deleted Vertices,Num Deleted Edges,total deleted edges Num,codetree_filtime/fil_num,codetree_fil_num,allfil_num/allfil_time,allfil_num,nonfail,verify num\n");
 
             for (datasetID = 0; datasetID <= 6; datasetID++) {
 
@@ -105,7 +105,7 @@ class Main {
                                 // of graphs to delete,Number of vertices removed,Num Deleted Edges,total number
                                 // of deleted
                                 // edges,codetree_filtime/fil_num,codetree_fil_num,allfil_num/allfil_time,allfil_num,nonfail\n");
-                                "dataset,query_set,FP_ratio,(G-C)/(G-A),SP,filtering_time(ms),verification_time(ms),query_time(ms),tree1_search_time(ms),tree2_search_time(ms),edge_fil_time(ms),node_fil_time(ms),|A(Q)|,|Can(Q)|,Filtering Graphs,Node Filteirng Graphs,Label Filteirng Graphs,Num deleted Vertices,Num Deleted Edges,total deleted edges Num,codetree_filtime/fil_num,codetree_fil_num,allfil_num/allfil_time,allfil_num,nonfail,verify num\n");
+                                "dataset,query_set,FP_ratio,(G-C)/(G-A),SP,filtering_time(ms),verification_time(ms),query_time(ms),tree1_search_time(ms),tree2_search_time(ms),edge_fil_time(ms),node_fil_time(ms),|In(Q)|,|A(Q)|,|Can(Q)|,Filtering Graphs,Node Filteirng Graphs,Label Filteirng Graphs,Num deleted Vertices,Num Deleted Edges,total deleted edges Num,codetree_filtime/fil_num,codetree_fil_num,allfil_num/allfil_time,allfil_num,nonfail,verify num\n");
 
                         System.out.println(" ");
                         resultFilename = String.format("result/%s_result.txt",

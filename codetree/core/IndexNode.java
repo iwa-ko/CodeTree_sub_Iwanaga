@@ -263,25 +263,31 @@ public class IndexNode implements Serializable {
         if (delta >= q.order) {
             for (Pair<IndexNode, SearchInfo> info : infoList) {
                 info.left.subsearch(q, info.right, impl);
-                info.left.supersearch(q, info.right, impl);
-                // if (!traverse)
-                // break;
+                if (!traverse)
+                    break;
             }
+            if (traverse) {
+                for (Pair<IndexNode, SearchInfo> info : infoList) {
+                    info.left.supersearch(q, info.right, impl);
+                }
+            }
+
         } else {
             for (Pair<IndexNode, SearchInfo> info : infoList) {
-                info.left.subsearch(q, info.right, impl);
+                info.left.subsearch2(q, info.right, impl);
             }
         }
         result.or(In);
-        Can.andNot(In);
         // Can.xor(In);
         a_in_count = In.cardinality();
         in_count += a_in_count;
         infoList = null;
 
-        // if (!traverse) {
-        // Can.clear();
-        // }
+        if (!traverse) {
+            Can.clear();
+        } else {
+            Can.andNot(In);
+        }
 
         contains_search += System.nanoTime() - start;
 
@@ -455,20 +461,46 @@ public class IndexNode implements Serializable {
     private void subsearch(Graph q, SearchInfo info, GraphCode impl) {
         Can.and(matchGraphIndicesBitSet);
         traverse_num++;
+        if (depth == q.order) {
+            In.or(matchGraphIndicesBitSet);
+            // result.or(matchGraphIndicesBitSet);
+            traverse = false;
+            return;
+        }
+
         if (children.size() == 0) {
             return;
         }
 
         List<Pair<CodeFragment, SearchInfo>> nextFrags = impl.enumerateFollowableFragments(q, info, adjLabels);
-        // List<Pair<CodeFragment, SearchInfo>> nextFrags =
-        // impl.enumerateFollowableFragments(q, info, adjLabels,
-        // childEdgeFrag);
 
         for (IndexNode m : children) {
             for (Pair<CodeFragment, SearchInfo> frag : nextFrags) {
-                // if (m.frag.equals(frag.left)) {
-                if (frag.left.contains(m.frag)) {
+                if (m.frag.equals(frag.left)) {
+                    // if (frag.left.contains(m.frag)) {
                     m.subsearch(q, frag.right, impl);
+                    if (!traverse)
+                        return;
+                }
+            }
+        }
+    }
+
+    private void subsearch2(Graph q, SearchInfo info, GraphCode impl) {
+        Can.and(matchGraphIndicesBitSet);
+        traverse_num++;
+
+        if (children.size() == 0) {
+            return;
+        }
+
+        List<Pair<CodeFragment, SearchInfo>> nextFrags = impl.enumerateFollowableFragments(q, info, adjLabels);
+
+        for (IndexNode m : children) {
+            for (Pair<CodeFragment, SearchInfo> frag : nextFrags) {
+                if (m.frag.equals(frag.left)) {
+                    // if (frag.left.contains(m.frag)) {
+                    m.subsearch2(q, frag.right, impl);
                 }
             }
         }
@@ -917,6 +949,7 @@ public class IndexNode implements Serializable {
                     + String.format("%.6f", (double) edgeFiltering_time / 1000 / 1000 / nonfail) + ","// edge fil
                     + String.format("%.6f", (double) nodeFiltering_time / 1000 / 1000 / nonfail) + ","// node fil
                     + String.format("%.1f", (double) totoal_kai) + ","
+                    + String.format("%.1f", (double) in_count) + ","
                     + String.format("%.1f", (double) doukeicount) + ","
                     + String.format("%.1f", (double) fil_count) + ","
                     + String.format("%.1f", (double) lab_fil_num) + ","
@@ -951,6 +984,7 @@ public class IndexNode implements Serializable {
                     + String.format("%.6f", (double) edgeFiltering_time / 1000 / 1000 / nonfail) + ","// edge fil
                     + String.format("%.6f", (double) nodeFiltering_time / 1000 / 1000 / nonfail) + ","// node fil
                     + String.format("%.1f", (double) totoal_kai) + ","
+                    + String.format("%.1f", (double) in_count) + ","
                     + String.format("%.1f", (double) doukeicount) + ","
                     + String.format("%.1f", (double) fil_count) + ","
                     + String.format("%.1f", (double) lab_fil_num) + ","
