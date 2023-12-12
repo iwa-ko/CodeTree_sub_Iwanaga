@@ -111,7 +111,6 @@ public class AcgmCode
                 }
                 if (next.size() == 0) {
                     return code;
-
                 }
 
                 int random = rand.nextInt(next.size());

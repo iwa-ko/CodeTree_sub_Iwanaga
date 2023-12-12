@@ -73,7 +73,11 @@ public class CodeTree implements Serializable {
         for (Graph g : G) {
             for (int l = 0; l < loop; l++) {
                 int start_vertice = rand.nextInt(g.order);
-                code = impl.computeCanonicalCode(g, start_vertice, limDepth);
+                HashSet<Integer> targetVertices = g.getTargetVertices(limDepth, start_vertice);
+                // System.out.println(targetVertices.toString());
+                Graph inducedGraph = g.generateInducedGraph(targetVertices);
+                // code = impl.computeCanonicalCode(g, start_vertice, limDepth);
+                code = impl.computeCanonicalCode(inducedGraph, 100);
                 root.addPath(code, g.id, false);
             }
         }

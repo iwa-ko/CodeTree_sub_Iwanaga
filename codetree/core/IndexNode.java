@@ -266,17 +266,6 @@ public class IndexNode implements Serializable {
 
         List<Pair<IndexNode, SearchInfo>> infoList = impl.beginSearch(q, this);
         if (delta >= q.order) {
-
-            // for (Pair<IndexNode, SearchInfo> info : infoList) {
-            // info.left.subsearch(q, info.right, impl);
-            // if (!traverse)
-            // break;
-            // }
-            // if (traverse) {
-            // for (Pair<IndexNode, SearchInfo> info : infoList) {
-            // info.left.supersearch(q, info.right, impl);
-            // }
-            // }
             for (Pair<IndexNode, SearchInfo> info : infoList) {
                 // U.or(matchGraphIndicesBitSet);
                 info.left.doublesearch(q, info.right, impl, false);
@@ -295,6 +284,7 @@ public class IndexNode implements Serializable {
             for (Pair<IndexNode, SearchInfo> info : infoList) {
                 info.left.subsearch2(q, info.right, impl);
             }
+            a_in_count = 0;
         }
 
         infoList = null;
@@ -332,7 +322,7 @@ public class IndexNode implements Serializable {
             nonfail++;
             SPper_q = 1;
             FPre = 1;
-            FPratio_q = 0;
+            FPratio_q = 1;
             totoal_kai += result.cardinality();
             FP += FPre;
             FPratio += FPratio_q;
