@@ -185,9 +185,8 @@ public class CodeTree implements Serializable {
             } else if (g.id % (G.size() / 10) == 0) {
                 System.out.print(".");
             }
-            BitSet gLabels = g.labels_Set();
-            // root.addIDtoTree(g, impl, g.id);
-            root.addIDtoTree(g, impl, g.id, gLabels);
+            root.addIDtoTree(g, impl, g.id);
+            root.init_g_traverse();
 
         }
     }
