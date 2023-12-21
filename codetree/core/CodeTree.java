@@ -69,6 +69,7 @@ public class CodeTree implements Serializable {
                 // rand = new Random(seed++);
                 break;
         }
+        // limDepth = 4;
 
         delta = limDepth;
         int loop = 1;
@@ -117,7 +118,7 @@ public class CodeTree implements Serializable {
         inclusionCheck(impl, G);
         bw.write("addIDtoTree(s): " + String.format("%.3f", (double) (System.nanoTime() - start) / 1000 / 1000 / 1000)
                 + "\n");
-        System.out.println("\naddIDtoTree(s): " + (System.nanoTime() - start) / 1000 /
+        System.out.println("\naddIDtoTree(s): " + (double) (System.nanoTime() - start) / 1000 /
                 1000 / 1000);
         index.write(String.format("%.3f", (double) (System.nanoTime() - start) / 1000
                 / 1000 / 1000));
@@ -162,11 +163,8 @@ public class CodeTree implements Serializable {
     }
 
     private void inclusionCheck(GraphCode impl, List<Graph> G) {
-        // root.addDescendantsLabels();
         for (Graph g : G) {
-            // g = g.shirinkNEC();
             if (g.id % 100000 == 0) {
-                // System.out.println();
             } else if (g.id % (G.size() / 2) == 0) {
                 System.out.print("*");
             } else if (g.id % (G.size() / 10) == 0) {
@@ -174,7 +172,7 @@ public class CodeTree implements Serializable {
             }
             root.addIDtoTree(g, impl, g.id);
             root.init_g_traverse();
-
+            root.initTraverseNecessity();
         }
     }
 

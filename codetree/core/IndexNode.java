@@ -20,6 +20,7 @@ public class IndexNode implements Serializable {
     protected BitSet matchGraphIndicesBitSet;
     public HashSet<Byte> adjLabels;
     protected int nodeID;
+    protected boolean traverseNecessity;
 
     protected int traverse_num = 0;
     protected LinkedHashMap<Integer, BitSet> labelFiltering;
@@ -114,6 +115,7 @@ public class IndexNode implements Serializable {
         childEdgeFrag = new BitSet();
         matchGraphMap = new HashMap<>();
         g_traverse_num = 0;
+        traverseNecessity = true;
     }
 
     int size() {
@@ -254,8 +256,8 @@ public class IndexNode implements Serializable {
             String directory, int qsize, HashMap<Integer, ArrayList<String>> gMaps, int delta, BufferedWriter br_whole)
             throws IOException, InterruptedException {
 
-        // if (q.id == 0)
-        // System.out.println("\n辿った節点数" + traverse_cou);
+        if (q.id == 0)
+            System.out.println("\n辿った節点数" + traverse_cou);
 
         long start = System.nanoTime();
 
@@ -452,12 +454,13 @@ public class IndexNode implements Serializable {
         boolean nowFrag = superFrag;
         q_trav_num++;
         traverse_num++;
-        if (!superFrag)
+        if (!superFrag) {
             // Can.and(matchGraphIndicesBitSet);
             if (depth == 1)
                 Can.and(matchGraphMap.get(traverse_num));
             else
                 Can.and(matchGraphIndicesBitSet);
+        }
 
         if (depth == q.order) {
             In.or(matchGraphIndicesBitSet);
@@ -549,46 +552,86 @@ public class IndexNode implements Serializable {
         }
     }
 
+    void initTraverseNecessity() {
+        // traverseNecessity = true;
+        // g_traverse_num = 0;
+
+        // for (IndexNode m : children) {
+        // m.initTraverseNecessity();
+        // }
+        for (IndexNode m : initTraverseNecessity) {
+            m.traverseNecessity = true;
+        }
+        initTraverseNecessity.clear();
+
+    }
+
+    static ArrayList<IndexNode> initTraverseNecessity = new ArrayList<>();
+
     private void addIDtoTree(Graph g, SearchInfo info, GraphCode impl, int id) {
-        // traverse_cou++;
+        traverse_cou++;
         g_traverse_num++;
         if (depth == 1) {
             if (matchGraphMap.get(g_traverse_num) == null) {
                 matchGraphMap.put(g_traverse_num, new BitSet());
             }
-            // if (g_traverse_num <= 50) {
             matchGraphMap.get(g_traverse_num).set(g.id);
-            // }
-        }
 
-        matchGraphIndicesBitSet.set(id, true);
-        if (depth == 1) {
             if (labelFiltering.get(id) == null) {
                 labelFiltering.put(id, new BitSet(g.order));
             }
             labelFiltering.get(id).set(info.getVertexIDs()[0]);
         }
 
+        matchGraphIndicesBitSet.set(id, true);
+        // if (depth == 1) {
+        // if (labelFiltering.get(id) == null) {
+        // labelFiltering.put(id, new BitSet(g.order));
+        // }
+        // labelFiltering.get(id).set(info.getVertexIDs()[0]);
+        // }
+
         if (children.size() == 0) {
             return;
         }
 
         if (backtrackJudge(g, id)) {
+            traverseNecessity = false;
+            initTraverseNecessity.add(this);
             return;
+        }
+
+        for (IndexNode m : children) {
+            if (!m.traverseNecessity)
+                continue;
+            adjLabels.add(m.frag.getVlabel());
+            for (int v = 0; v < depth; v++) {
+                if (m.frag.getelabel()[v] > 0)
+                    childEdgeFrag.set(v);
+            }
         }
 
         List<Pair<CodeFragment, SearchInfo>> nextFrags = impl.enumerateFollowableFragments(g, info, adjLabels,
                 childEdgeFrag);
-        // List<Pair<CodeFragment, SearchInfo>> nextFrags =
-        // impl.enumerateFollowableFragments(g, info, adjLabels);
 
         for (IndexNode m : children) {
+            if (!m.traverseNecessity)
+                continue;
             for (Pair<CodeFragment, SearchInfo> frag : nextFrags) {
+                if (!m.traverseNecessity)
+                    break;
                 if (frag.left.contains(m.frag)) {
                     m.addIDtoTree(g, frag.right, impl, g.id);
                 }
             }
         }
+        // for (IndexNode m : children) {
+        // for (Pair<CodeFragment, SearchInfo> frag : nextFrags) {
+        // if (frag.left.contains(m.frag)) {
+        // m.addIDtoTree(g, frag.right, impl, g.id);
+        // }
+        // }
+        // }
     }
 
     private boolean backtrackJudge(Graph g, int id) {
@@ -1058,6 +1101,7 @@ public class IndexNode implements Serializable {
         verfyNum = 0;
         labelFiltering_time = 0;
         q_trav_num = 0;
+        traverse_cou = 0;
     }
 
     List<Integer> search(Graph q, GraphCode impl) {
