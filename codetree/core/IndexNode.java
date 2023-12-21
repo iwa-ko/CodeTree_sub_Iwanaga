@@ -332,9 +332,12 @@ public class IndexNode implements Serializable {
         write_file_indiv(q, bw_data, Gsize);
 
         if (q.id == 99) {
-            System.out.println("辿った節点数" + q_trav_num);
-            System.out.println("削除できた頂点数/|Can(Q)|:" + (double) query_per_nf_count / (doukeicount + lab_fil_num));
-            System.out.println("query time:" + ":" + String.format("%.6f", ((double) search_time / 1000 / 1000 +
+            // System.out.println("辿った節点数" + q_trav_num);
+            System.out.println("\nA/C:" + String.format("%.5f", FPratio / nonfail));
+            System.out.println("A:" + totoal_kai);
+            // System.out.println("削除できた頂点数/|Can(Q)|:" + (double) query_per_nf_count /
+            // (doukeicount + lab_fil_num));
+            System.out.println("query time:" + String.format("%.3f", ((double) search_time / 1000 / 1000 +
                     verification_time + (double) (edgeFiltering_time + nodeFiltering_time) / 1000 / 1000) / 100));
 
             write_file(allbw, bw, Gsize, br_whole);
@@ -451,7 +454,10 @@ public class IndexNode implements Serializable {
         traverse_num++;
         if (!superFrag)
             // Can.and(matchGraphIndicesBitSet);
-            Can.and(matchGraphMap.get(traverse_num));
+            if (depth == 1)
+                Can.and(matchGraphMap.get(traverse_num));
+            else
+                Can.and(matchGraphIndicesBitSet);
 
         if (depth == q.order) {
             In.or(matchGraphIndicesBitSet);
@@ -497,8 +503,10 @@ public class IndexNode implements Serializable {
     private void subsearch2(Graph q, SearchInfo info, GraphCode impl) {
         q_trav_num++;
         traverse_num++;
-        // Can.and(matchGraphIndicesBitSet);
-        Can.and(matchGraphMap.get(traverse_num));
+        if (depth == 1)
+            Can.and(matchGraphMap.get(traverse_num));
+        else
+            Can.and(matchGraphIndicesBitSet);
 
         // if (backtrackJudge()) {
         // return;
@@ -544,12 +552,16 @@ public class IndexNode implements Serializable {
     private void addIDtoTree(Graph g, SearchInfo info, GraphCode impl, int id) {
         // traverse_cou++;
         g_traverse_num++;
-        if (matchGraphMap.get(g_traverse_num) == null) {
-            matchGraphMap.put(g_traverse_num, new BitSet());
+        if (depth == 1) {
+            if (matchGraphMap.get(g_traverse_num) == null) {
+                matchGraphMap.put(g_traverse_num, new BitSet());
+            }
+            // if (g_traverse_num <= 50) {
+            matchGraphMap.get(g_traverse_num).set(g.id);
+            // }
         }
-        matchGraphMap.get(g_traverse_num).set(g.id);
 
-        // matchGraphIndicesBitSet.set(id, true);
+        matchGraphIndicesBitSet.set(id, true);
         if (depth == 1) {
             if (labelFiltering.get(id) == null) {
                 labelFiltering.put(id, new BitSet(g.order));
@@ -561,9 +573,9 @@ public class IndexNode implements Serializable {
             return;
         }
 
-        // if (backtrackJudge(g, id)) {
-        // return;
-        // }
+        if (backtrackJudge(g, id)) {
+            return;
+        }
 
         List<Pair<CodeFragment, SearchInfo>> nextFrags = impl.enumerateFollowableFragments(g, info, adjLabels,
                 childEdgeFrag);
@@ -930,7 +942,8 @@ public class IndexNode implements Serializable {
                     + "," + (size * nonfail - veq_Can_total) + "," + nonfail + "," + verfyNum
                     + "," + q_trav_num
                     + "\n");
-            ;
+            allbw.flush();
+            br_whole.flush();
 
             bw.write("(C)書き込み関数時間(ms): " + String.format("%.2f", (double) write_time /
                     1000 / 1000) + "\n");

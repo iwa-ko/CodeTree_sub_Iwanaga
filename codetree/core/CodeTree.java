@@ -5,7 +5,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.io.BufferedWriter;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.util.*;
 
 public class CodeTree implements Serializable {
@@ -90,64 +92,49 @@ public class CodeTree implements Serializable {
         // }
 
         index.write(dataset + "," + limDepth + ","
-                + String.format("%.6f", (double) (System.nanoTime() - time) / 1000 / 1000) +
+                + String.format("%.6f", (double) (System.nanoTime() - time) / 1000 / 1000 / 1000) +
                 ",");
+
+        int treesize = root.size();
 
         System.out.println("depth " + (limDepth));
         bw.write("limDepth" + (limDepth) + "\n");
-        System.out.println("Tree size: " + root.size());
-        System.out.println("addPathtoTree(ms): " + (System.nanoTime() - time) / 1000 /
-                1000);
-        bw.write("Tree size(original): " + root.size() + "\n");
-        bw.write("addPathtoTree(ms): " + String.format("%.6f", (double) (System.nanoTime() - time) / 1000 / 1000)
+        System.out.println("Tree size: " + treesize);
+        System.out.println("addPathtoTree(s): " + String.format("%.6f", (double) (System.nanoTime() - time) / 1000 /
+                1000 / 1000));
+        bw.write("addPathtoTree(s): " + String.format("%.6f", (double) (System.nanoTime() - time) / 1000 / 1000 / 1000)
                 + "\n");
 
         long start = System.nanoTime();
 
-        int treesize = root.size();
-
-        System.out.println("tree size (original): " + treesize);
         index.write(treesize + ",");
-
-        List<Graph> leafGraphs = new ArrayList<>();
-        root.getLeafGraph(leafGraphs);
-        inclusionCheck2(impl, leafGraphs);
-        root.removeTree();
         treesize = root.size();
-
-        System.out.println("tree size (new): " + treesize);
-
-        bw.write("Tree size(new): " + treesize + "\n");
-        index.write(
-                treesize + "," + String.format("%.6f", (double) (System.nanoTime() - time) / 1000 / 1000) + ",");
-
-        System.out.println(
-                "remove node time :" + String.format("%.6f", (double) (System.nanoTime() - time) / 1000 / 1000));
 
         root.addInfo();
 
         start = System.nanoTime();
         System.out.println("グラフIDの計算中");
         inclusionCheck(impl, G);
-        bw.write("addIDtoTree(ms): " + String.format("%.3f", (double) (System.nanoTime() - start) / 1000 / 1000)
+        bw.write("addIDtoTree(s): " + String.format("%.3f", (double) (System.nanoTime() - start) / 1000 / 1000 / 1000)
                 + "\n");
-        System.out.println("\naddIDtoTree: " + (System.nanoTime() - start) / 1000 /
-                1000 + "msec");
+        System.out.println("\naddIDtoTree(s): " + (System.nanoTime() - start) / 1000 /
+                1000 / 1000);
         index.write(String.format("%.3f", (double) (System.nanoTime() - start) / 1000
-                / 1000));
+                / 1000 / 1000));
 
-        // try {
-        // String codetree = String.format("data_structure/%s/depth%d_structure.ser",
-        // dataset, limDepth);
-        // FileOutputStream fileOut = new FileOutputStream(codetree);
-        // ObjectOutputStream objout = new ObjectOutputStream(fileOut);
-        // objout.writeObject(this);
-        // objout.close();
-        // fileOut.close();
-        // System.out.println("データ構造がシリアライズされ、ファイルに保存されました。");
-        // } catch (IOException e) {
-        // e.printStackTrace();
-        // }
+        try {
+            String codetree = String.format("data_structure/%s.ser",
+                    dataset);
+            FileOutputStream fileOut = new FileOutputStream(codetree);
+            ObjectOutputStream objout = new ObjectOutputStream(fileOut);
+            objout.writeObject(this);
+            objout.close();
+            fileOut.close();
+            System.out.println("データ構造がシリアライズされ、ファイルに保存されました。");
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public CodeTree(GraphCode impl, List<Graph> G, int b) {
