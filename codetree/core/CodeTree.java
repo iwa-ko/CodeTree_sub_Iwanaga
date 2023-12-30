@@ -66,10 +66,11 @@ public class CodeTree implements Serializable {
                 limDepth = 7;
                 // rand = new Random(16);
                 // System.out.println(seed);
-                // rand = new Random(seed++);
+                // rand =
+                new Random(seed++);
                 break;
         }
-        // limDepth = 4;
+        limDepth = 4;
 
         delta = limDepth;
         int loop = 1;

@@ -94,6 +94,7 @@ public class IndexNode implements Serializable {
     static int lab_fil_num = 0;
     static int verfyNum = 0;
     static boolean traverse;
+    static int fail = 0;
 
     static ArrayList<IndexNode> removeNode = new ArrayList<>();
 
@@ -259,6 +260,12 @@ public class IndexNode implements Serializable {
         if (q.id == 0)
             System.out.println("\n辿った節点数" + traverse_cou);
 
+        if (fail == 50) {
+            if (q.id == 99) {
+                init_param();
+            }
+            return new BitSet();
+        }
         long start = System.nanoTime();
 
         init_Bitset();
@@ -278,6 +285,8 @@ public class IndexNode implements Serializable {
             a_in_count = In.cardinality();
             in_count += a_in_count;
             result.or(In);
+            a_fil_count = Gsize - Can.cardinality();
+
             if (!traverse) {
                 Can.clear();
             } else {
@@ -288,6 +297,8 @@ public class IndexNode implements Serializable {
                 info.left.subsearch2(q, info.right, impl);
             }
             a_in_count = 0;
+            a_fil_count = Gsize - Can.cardinality();
+
         }
 
         infoList = null;
@@ -296,7 +307,6 @@ public class IndexNode implements Serializable {
 
         if (Can.cardinality() != 0) {
             verfyNum++;
-            a_fil_count = Gsize - Can.cardinality();
             fil_count += a_fil_count;
             a_filterTime = System.nanoTime() - start;
             search_time += a_filterTime;// filtering time
@@ -315,7 +325,6 @@ public class IndexNode implements Serializable {
 
             verification_VEQ(directory, dataset, mode, q, qsize, Gsize);
         } else {
-            a_fil_count = Gsize - Can.cardinality();
             fil_count += a_fil_count;
             doukeicount += Can.cardinality();
             a_filterTime = System.nanoTime() - start;
@@ -344,7 +353,6 @@ public class IndexNode implements Serializable {
 
             write_file(allbw, bw, Gsize, br_whole);
             init_param();
-
         }
         return result;
     }
@@ -428,26 +436,6 @@ public class IndexNode implements Serializable {
         write_time += System.nanoTime() - time;
     }
 
-    private void write_file_for_Ver(HashMap<Integer, ArrayList<String>> gMaps) {
-        long time = System.nanoTime();
-        try (BufferedWriter bw2 = Files.newBufferedWriter(out)) {
-
-            for (int trueIndex = Can.nextSetBit(0); trueIndex != -1; trueIndex = Can
-                    .nextSetBit(++trueIndex)) {
-
-                can.add(trueIndex);
-                for (String line : gMaps.get(trueIndex)) {
-                    bw2.write(line + "\n");
-                }
-            }
-
-            bw2.close();
-        } catch (IOException e) {
-            System.exit(1);
-        }
-        write_time += System.nanoTime() - time;
-    }
-
     static int q_trav_num = 0;
 
     private void doublesearch(Graph q, SearchInfo info, GraphCode impl, boolean superFrag) {
@@ -471,6 +459,9 @@ public class IndexNode implements Serializable {
         }
 
         if (children.size() == 0) {
+            return;
+        }
+        if (backtrackJudge()) {
             return;
         }
 
@@ -511,9 +502,9 @@ public class IndexNode implements Serializable {
         else
             Can.and(matchGraphIndicesBitSet);
 
-        // if (backtrackJudge()) {
-        // return;
-        // }
+        if (backtrackJudge()) {
+            return;
+        }
 
         if (children.size() == 0) {
             return;
@@ -777,6 +768,7 @@ public class IndexNode implements Serializable {
                 FPre = 0;
                 filpertime = 0;
                 SPper_q = 0;
+                fail++;
             } else {
                 nonfail++;
                 InputStream inputStream = p.getInputStream();
@@ -896,7 +888,6 @@ public class IndexNode implements Serializable {
                 // + ","
                 // + String.format("%.6f", filpertime)
                 + "\n");
-
         deletedVsumPerq = 0;
         a_nodeFiltering_time = 0;
         a_labelNumFiltering = 0;
@@ -905,7 +896,6 @@ public class IndexNode implements Serializable {
         fileter_time = 0;
         verify_time = 0;
         veq_per_Can = 0;
-
     }
 
     private void write_file(BufferedWriter allbw, BufferedWriter bw, int size, BufferedWriter br_whole) {
@@ -1063,6 +1053,7 @@ public class IndexNode implements Serializable {
     }
 
     private void init_param() {
+        fail = 0;
         contains_search = 0;
         equals_search = 0;
         removeTotalSize = 0;
@@ -1102,6 +1093,14 @@ public class IndexNode implements Serializable {
         labelFiltering_time = 0;
         q_trav_num = 0;
         traverse_cou = 0;
+        deletedVsumPerq = 0;
+        a_nodeFiltering_time = 0;
+        a_labelNumFiltering = 0;
+        labelFilteringGraph = 0;
+        query_per_veq = 0;
+        fileter_time = 0;
+        verify_time = 0;
+        veq_per_Can = 0;
     }
 
     List<Integer> search(Graph q, GraphCode impl) {

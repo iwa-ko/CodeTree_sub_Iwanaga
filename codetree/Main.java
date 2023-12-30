@@ -41,7 +41,7 @@ class Main {
             allfind.write(
                     "dataset,depth,addPathtoTree(s),Tree_size,addIDtoTree(s),Build_tree(s),memory cost\n");
 
-            for (datasetID = 5; datasetID <= 5; datasetID++) {
+            for (datasetID = 0; datasetID <= 6; datasetID++) {
                 br_whole.write(
                         "dataset,query_set,A/C,(G-C)/(G-A),SP,filtering_time(ms),verification_time(ms),query_time(ms),tree1_search_time(ms),node_fil_time(ms),|In(Q)|,|A(Q)|,|Can(Q)|,|F(Q)|,Num deleted Vertices,total deleted edges Num,codetree_filtime/fil_num,codetree_fil_num,allfil_num/allfil_time,allfil_num,nonfail,verify num,q_trav_num\n");
 
@@ -57,7 +57,7 @@ class Main {
                     List<ArrayList<Pair<Integer, Graph>>> Q = new ArrayList<>();
                     final int querysize = 100;
                     final int minedge = 4;
-                    final int maxedge = 64;
+                    final int maxedge = 32;
 
                     List<Graph> G = SdfFileReader.readFile_gfu(Paths.get(gfuFilename));
 
@@ -69,7 +69,7 @@ class Main {
                             Graph q = SdfFileReader.readFileQuery_gfu(Paths.get(q_gfuFilename));
                             qset.add(new Pair<Integer, Graph>(i, q));
                         }
-                        // query_search(qset, numOfEdge, "R");
+                        query_search(qset, numOfEdge, "R");
                         Q.add(qset);
                     }
 
@@ -81,7 +81,7 @@ class Main {
                             Graph q = SdfFileReader.readFileQuery_gfu(Paths.get(q_gfuFilename));
                             qset.add(new Pair<Integer, Graph>(i, q));
                         }
-                        // query_search(qset, numOfEdge, "B");
+                        query_search(qset, numOfEdge, "B");
                         Q.add(qset);
                     }
 
@@ -142,8 +142,8 @@ class Main {
                             allfind.write(String.format("%.2f", (double) fileSize / 1024 / 1024) + "\n");
 
                             allfind.flush();
-                            if (true)
-                                continue;
+                            // if (true)
+                            // continue;
 
                             HashMap<Integer, ArrayList<String>> gMaps = makeGmaps(gfuFilename);
 
@@ -157,10 +157,6 @@ class Main {
                             for (ArrayList<Pair<Integer, Graph>> Q_set : Q) {
 
                                 adjust[count++] = index;
-                                if ((datasetID == 6 && index == 64)) {
-                                    index *= 2;
-                                    continue;
-                                }
 
                                 if (index <= maxedge) {
                                     System.out.println("\nQ" + index + "R");
@@ -199,7 +195,7 @@ class Main {
                                         }
                                         BitSet result = tree.subgraphSearch(q.right, bw, datasetSize, mode,
                                                 dataset,
-                                                bwout, allbw, G, q.right.size, gMaps, br_whole);
+                                                bwout, allbw, G, q.right.order, gMaps, br_whole);
 
                                         bw2.write(
                                                 q.left.toString() + " " + result.cardinality() + "個"
@@ -389,16 +385,23 @@ class Main {
         double V = 0;
         double e = 0;
         double sigma = 0;
+        double degree = 0;
 
         for (Pair<Integer, Graph> q : Q) {
             Graph g = q.right;
             V += g.order();
             e += g.size();
             sigma += g.labels();
+            double deg = 0;
+            for (int i = 0; i < g.order; i++) {
+                deg += g.adjList[i].length;
+            }
+            deg /= g.order;
+            degree += deg;
         }
         // System.out.println("Q_" + numOfEdge + mode + " |V| per q " + V / Q.size());
         // System.out.println("Q_" + numOfEdge + mode + " |E| per q " + e / Q.size());
-        System.out.println("Q_" + numOfEdge + mode + " d per q " + String.format("%.2f", e * 2 / V));
+        System.out.println("Q_" + numOfEdge + mode + " d per q " + String.format("%.2f", degree / Q.size()));
         // System.out.println("Q_" + numOfEdge + mode + " |Σ| per q " + sigma /
         // Q.size());
         System.out.println();
