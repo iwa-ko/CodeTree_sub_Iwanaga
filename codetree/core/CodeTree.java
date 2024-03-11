@@ -28,18 +28,11 @@ public class CodeTree implements Serializable {
 
         List<CodeFragment> code = new ArrayList<>();
 
-        long time = System.nanoTime();
-
-        List<ArrayList<CodeFragment>> codelist = impl.computeCanonicalCode(Graph.numOflabels(G));
-        for (ArrayList<CodeFragment> c : codelist) {
-            root.addPath(c, -1, false);
-        }
+        long start = System.nanoTime();
 
         switch (dataset) {
             case "AIDS":
-                // limDepth = 9;
                 limDepth = 5;
-
                 break;
 
             case "COLLAB":
@@ -51,50 +44,44 @@ public class CodeTree implements Serializable {
                 break;
 
             case "pdbs":
-                limDepth = 16;
+                limDepth = 20;
                 break;
 
             case "IMDB-MULTI":
-                limDepth = 5;
+                limDepth = 4;
                 break;
 
             case "pcms":
-                limDepth = 5;
+                limDepth = 10;
                 break;
 
             case "ppigo":
-                limDepth = 7;
-                // rand = new Random(16);
-                // System.out.println(seed);
-                // rand =
-                new Random(seed++);
+                limDepth = 5;
                 break;
         }
-        limDepth = 4;
-
         delta = limDepth;
         int loop = 1;
         for (Graph g : G) {
             for (int l = 0; l < loop; l++) {
                 int start_vertice = rand.nextInt(g.order);
                 HashSet<Integer> targetVertices = g.getTargetVertices(limDepth, start_vertice);
-                // System.out.println(targetVertices.toString());
+
                 Graph inducedGraph = g.generateInducedGraph(targetVertices);
-                // code = impl.computeCanonicalCode(g, start_vertice, limDepth);
-                code = impl.computeCanonicalCode(inducedGraph, 100);
+
+                start_vertice = rand.nextInt(inducedGraph.order);
+                code = impl.computeCanonicalCode(inducedGraph, start_vertice, limDepth);
                 root.addPath(code, g.id, false);
             }
         }
 
-        // for (Graph g : G) {
-        // ArrayList<Integer> vertexIDs = new ArrayList<>();
-        // int start_vertice = rand.nextInt(g.order);
-        // code = impl.computeCanonicalCode_nec(g, start_vertice, limDepth, vertexIDs);
-        // root.addPath_nec(code, g, vertexIDs);
-        // }
+        List<ArrayList<CodeFragment>> codelist = impl.computeCanonicalCode(Graph.numOflabels(G));
+        for (ArrayList<CodeFragment> c : codelist) {
+            root.addPath(c, -1, false);
+        }
+        codelist = null;
 
         index.write(dataset + "," + limDepth + ","
-                + String.format("%.6f", (double) (System.nanoTime() - time) / 1000 / 1000 / 1000) +
+                + String.format("%.6f", (double) (System.nanoTime() - start) / 1000 / 1000 / 1000) +
                 ",");
 
         int treesize = root.size();
@@ -102,27 +89,65 @@ public class CodeTree implements Serializable {
         System.out.println("depth " + (limDepth));
         bw.write("limDepth" + (limDepth) + "\n");
         System.out.println("Tree size: " + treesize);
-        System.out.println("addPathtoTree(s): " + String.format("%.6f", (double) (System.nanoTime() - time) / 1000 /
+        System.out.println("addPathtoTree(s): " + String.format("%.6f", (double) (System.nanoTime() - start) / 1000 /
                 1000 / 1000));
-        bw.write("addPathtoTree(s): " + String.format("%.6f", (double) (System.nanoTime() - time) / 1000 / 1000 / 1000)
+        bw.write("addPathtoTree(s): " + String.format("%.6f", (double) (System.nanoTime() - start) / 1000 / 1000 / 1000)
                 + "\n");
-
-        long start = System.nanoTime();
 
         index.write(treesize + ",");
+
+        long time = System.nanoTime();
+        List<Graph> leafGraphs = new ArrayList<>();
+        root.getLeafGraph(leafGraphs);
+        inclusionCheck2(impl, leafGraphs);
+        root.removeTree();
+        root.init_removeNode();
+        leafGraphs = null;
         treesize = root.size();
+        System.out.println("tree size (枝刈り後): " + treesize);
 
+        bw.write("Tree size(new): " + treesize + "\n");
+        index.write(
+                treesize + "," + String.format("%.6f", (double) (System.nanoTime() - time) / 1000 / 1000 / 1000) + ",");
+
+        System.out.println(
+                "remove node time(s) :"
+                        + String.format("%.6f", (double) (System.nanoTime() - time) / 1000 / 1000 / 1000));
+
+        time = System.nanoTime();
         root.addInfo();
-
-        start = System.nanoTime();
         System.out.println("グラフIDの計算中");
         inclusionCheck(impl, G);
-        bw.write("addIDtoTree(s): " + String.format("%.3f", (double) (System.nanoTime() - start) / 1000 / 1000 / 1000)
+        bw.write("addIDtoTree(s): " + String.format("%.3f", (double) (System.nanoTime() - time) / 1000 / 1000 / 1000)
                 + "\n");
-        System.out.println("\naddIDtoTree(s): " + (double) (System.nanoTime() - start) / 1000 /
+        System.out.println("\naddIDtoTree(s): " + (double) (System.nanoTime() - time) / 1000 /
                 1000 / 1000);
-        index.write(String.format("%.3f", (double) (System.nanoTime() - start) / 1000
+        index.write(String.format("%.3f", (double) (System.nanoTime() - time) / 1000
                 / 1000 / 1000));
+
+        time = System.nanoTime();
+        // root.sortChildren();
+        // root.addDescendantsIDs();
+        // root.printCanSize();
+
+        root.checkBacktrackNode();
+        System.out.println("sortChildren(s): " + (double) (System.nanoTime() - time) / 1000 /
+                1000 / 1000);
+
+        bw.write("Build tree(s): "
+                + String.format("%.6f",
+                        (double) (System.nanoTime() - start) / 1000 / 1000 / 1000)
+                +
+                "\n");
+        index.write(","
+                + String.format("%.6f",
+                        (double) (System.nanoTime() - start) / 1000 / 1000 / 1000)
+                + ",");
+
+        System.out.println("Build Time(s): "
+                + String.format("%.6f",
+                        (double) (System.nanoTime() - start) / 1000 / 1000 / 1000)
+                + ",");
 
         try {
             String codetree = String.format("data_structure/%s.ser",
@@ -132,8 +157,6 @@ public class CodeTree implements Serializable {
             objout.writeObject(this);
             objout.close();
             fileOut.close();
-            System.out.println("データ構造がシリアライズされ、ファイルに保存されました。");
-
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -172,7 +195,7 @@ public class CodeTree implements Serializable {
                 System.out.print(".");
             }
             root.addIDtoTree(g, impl, g.id);
-            root.init_g_traverse();
+            // root.init_g_traverse();
             root.initTraverseNecessity();
         }
     }

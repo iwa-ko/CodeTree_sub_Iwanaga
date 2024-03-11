@@ -39,45 +39,45 @@ public class VertexLabel {
 
     // 頻出ラベルに大きな頂点ラベルを割り当てなおす
     // public static void orderLabel(List<Graph> G) {
-    //     numOflabels = Graph.numOflabels(G);
-    //     labels = new int[numOflabels];
-    //     orderlabels = new int[numOflabels];
+    // numOflabels = Graph.numOflabels(G);
+    // labels = new int[numOflabels];
+    // orderlabels = new int[numOflabels];
 
-    //     for (int i = 0; i < G.size(); i++) {
-    //         Graph g = G.get(i);
-    //         for (int j = 0; j < g.order; j++) {
-    //             labels[g.vertices[j]]++;
-    //         }
-    //     }
+    // for (int i = 0; i < G.size(); i++) {
+    // Graph g = G.get(i);
+    // for (int j = 0; j < g.order; j++) {
+    // labels[g.vertices[j]]++;
+    // }
+    // }
 
-    //     // for(int i=0;i<labels.length;i++){
-    //     // System.out.println(i+ " "+labels[i]);
-    //     // }
+    // // for(int i=0;i<labels.length;i++){
+    // // System.out.println(i+ " "+labels[i]);
+    // // }
 
-    //     System.arraycopy(labels, 0, orderlabels, 0, numOflabels);
-    //     Arrays.sort(orderlabels);// 昇順
+    // System.arraycopy(labels, 0, orderlabels, 0, numOflabels);
+    // Arrays.sort(orderlabels);// 昇順
 
     // }
 
     // public static void relabel(Graph g) {
-    //     int vlabel = 127 - numOflabels;
+    // int vlabel = 127 - numOflabels;
 
-    //     for (int i = 0; i < numOflabels; i++, vlabel++) {
-    //         int num = orderlabels[i];
-    //         for (int j = 0; j < numOflabels; j++) {
-    //             if (num == labels[j]) {
-    //                 reverse[vlabel] = j;
-    //                 for (int l = 0; l < g.order(); l++) {
-    //                     if (g.vertices[l] == j) {
-    //                         g.vertices[l] = (byte) vlabel;
-    //                     }
-    //                 }
-    //             }
-    //         }
-    //     }
+    // for (int i = 0; i < numOflabels; i++, vlabel++) {
+    // int num = orderlabels[i];
+    // for (int j = 0; j < numOflabels; j++) {
+    // if (num == labels[j]) {
+    // reverse[vlabel] = j;
+    // for (int l = 0; l < g.order(); l++) {
+    // if (g.vertices[l] == j) {
+    // g.vertices[l] = (byte) vlabel;
+    // }
+    // }
+    // }
+    // }
+    // }
     // }
 
-    public static int reverse(byte vlabel) {
-        return reverse[vlabel];
-    }
+    // public static int reverse(byte vlabel) {
+    // return reverse[vlabel];
+    // }
 }
