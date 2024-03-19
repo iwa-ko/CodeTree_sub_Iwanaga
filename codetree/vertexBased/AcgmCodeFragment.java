@@ -36,6 +36,21 @@ class AcgmCodeFragment
         AcgmCodeFragment other = (AcgmCodeFragment) other0;
         return vLabel == other.vLabel && Arrays.equals(eLabels, other.eLabels);
     }
+    // @Override
+    // public boolean equals(Object other0) {
+
+    // AcgmCodeFragment other = (AcgmCodeFragment) other0;
+
+    // if (vLabel != other.vLabel)
+    // return false;
+
+    // final int len = eLabels.length;
+    // for (int i = 0; i < len; i++) {
+    // if (eLabels[i] != other.eLabels[i])
+    // return false;
+    // }
+    // return true;
+    // }
 
     @Override
     public boolean contains(CodeFragment other0) {

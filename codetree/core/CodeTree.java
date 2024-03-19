@@ -1,9 +1,6 @@
 package codetree.core;
 
 import java.io.Serializable;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.io.BufferedWriter;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -13,7 +10,7 @@ import java.util.*;
 public class CodeTree implements Serializable {
     GraphCode impl;
     public IndexNode root;
-    public static int delta;
+    public int delta;
     Random rand;
 
     static int seed = 22;
@@ -21,7 +18,6 @@ public class CodeTree implements Serializable {
     public CodeTree(GraphCode impl, List<Graph> G, BufferedWriter bw, String dataset,
             BufferedWriter index) throws IOException {
 
-        int limDepth = 0;
         this.impl = impl;
         this.root = new IndexNode(null, null);
         rand = new Random(2);
@@ -29,47 +25,46 @@ public class CodeTree implements Serializable {
         List<CodeFragment> code = new ArrayList<>();
 
         long start = System.nanoTime();
+        int loop = 1;
 
         switch (dataset) {
             case "AIDS":
-                limDepth = 5;
+                delta = 5;
                 break;
 
             case "COLLAB":
-                limDepth = 5;
+                delta = 5;
                 break;
 
             case "REDDIT-MULTI-5K":
-                limDepth = 3;
+                delta = 3;
                 break;
 
             case "pdbs":
-                limDepth = 20;
+                delta = 20;
                 break;
 
             case "IMDB-MULTI":
-                limDepth = 4;
+                delta = 4;
                 break;
 
             case "pcms":
-                limDepth = 10;
+                delta = 10;
+                loop = 10;
                 break;
 
             case "ppigo":
-                limDepth = 5;
+                delta = 5;
+                loop = 20;
                 break;
         }
-        delta = limDepth;
-        int loop = 1;
         for (Graph g : G) {
             for (int l = 0; l < loop; l++) {
                 int start_vertice = rand.nextInt(g.order);
-                HashSet<Integer> targetVertices = g.getTargetVertices(limDepth, start_vertice);
-
+                HashSet<Integer> targetVertices = g.getTargetVertices(delta, start_vertice);
                 Graph inducedGraph = g.generateInducedGraph(targetVertices);
-
                 start_vertice = rand.nextInt(inducedGraph.order);
-                code = impl.computeCanonicalCode(inducedGraph, start_vertice, limDepth);
+                code = impl.computeCanonicalCode(inducedGraph, start_vertice, delta);
                 root.addPath(code, g.id, false);
             }
         }
@@ -80,14 +75,14 @@ public class CodeTree implements Serializable {
         }
         codelist = null;
 
-        index.write(dataset + "," + limDepth + ","
+        index.write(dataset + "," + delta + ","
                 + String.format("%.6f", (double) (System.nanoTime() - start) / 1000 / 1000 / 1000) +
                 ",");
 
         int treesize = root.size();
 
-        System.out.println("depth " + (limDepth));
-        bw.write("limDepth" + (limDepth) + "\n");
+        System.out.println("depth " + (delta));
+        bw.write("delta" + (delta) + "\n");
         System.out.println("Tree size: " + treesize);
         System.out.println("addPathtoTree(s): " + String.format("%.6f", (double) (System.nanoTime() - start) / 1000 /
                 1000 / 1000));
@@ -99,7 +94,7 @@ public class CodeTree implements Serializable {
         long time = System.nanoTime();
         List<Graph> leafGraphs = new ArrayList<>();
         root.getLeafGraph(leafGraphs);
-        inclusionCheck2(impl, leafGraphs);
+        searchByLeafGraph(impl, leafGraphs);
         root.removeTree();
         root.init_removeNode();
         leafGraphs = null;
@@ -115,8 +110,8 @@ public class CodeTree implements Serializable {
                         + String.format("%.6f", (double) (System.nanoTime() - time) / 1000 / 1000 / 1000));
 
         time = System.nanoTime();
-        root.addInfo();
         System.out.println("グラフIDの計算中");
+        root.addInfo();
         inclusionCheck(impl, G);
         bw.write("addIDtoTree(s): " + String.format("%.3f", (double) (System.nanoTime() - time) / 1000 / 1000 / 1000)
                 + "\n");
@@ -129,7 +124,6 @@ public class CodeTree implements Serializable {
         // root.sortChildren();
         // root.addDescendantsIDs();
         // root.printCanSize();
-
         root.checkBacktrackNode();
         System.out.println("sortChildren(s): " + (double) (System.nanoTime() - time) / 1000 /
                 1000 / 1000);
@@ -194,13 +188,13 @@ public class CodeTree implements Serializable {
             } else if (g.id % (G.size() / 10) == 0) {
                 System.out.print(".");
             }
-            root.addIDtoTree(g, impl, g.id);
+            root.addIDtoTree(g, impl);
             // root.init_g_traverse();
             root.initTraverseNecessity();
         }
     }
 
-    private void inclusionCheck2(GraphCode impl, List<Graph> leafGraphs) {
+    private void searchByLeafGraph(GraphCode impl, List<Graph> leafGraphs) {
 
         ArrayList<Integer> idList = new ArrayList<>();
         ArrayList<Integer> removeIDList = new ArrayList<>();
@@ -219,11 +213,20 @@ public class CodeTree implements Serializable {
         return root.search(query, impl);
     }
 
-    public BitSet subgraphSearch(Graph query, BufferedWriter bw, int size, String mode, String dataset,
-            BufferedWriter bwout, BufferedWriter allbw, List<Graph> G, int qsize,
+    // public BitSet subgraphSearch(Graph query, BufferedWriter bw, int size, String
+    // mode, String dataset,
+    // BufferedWriter bwout, BufferedWriter allbw, List<Graph> G, int qsize,
+    // HashMap<Integer, ArrayList<String>> gMaps, BufferedWriter br_whole)
+    // throws IOException, InterruptedException {
+    // return root.subsearch(query, impl, size, bw, mode, dataset, bwout, allbw, G,
+    // "Query", qsize, gMaps, delta,
+    // br_whole);
+    // }
+    public BitSet subgraphSearch(Graph query, BufferedWriter bw, String mode, String dataset,
+            BufferedWriter bwout, BufferedWriter allbw, List<Graph> G,
             HashMap<Integer, ArrayList<String>> gMaps, BufferedWriter br_whole)
             throws IOException, InterruptedException {
-        return root.subsearch(query, impl, size, bw, mode, dataset, bwout, allbw, G, "Query", qsize, gMaps, delta,
+        return root.subsearch(query, impl, bw, mode, dataset, bwout, allbw, G, "Query", gMaps, delta,
                 br_whole);
     }
 }

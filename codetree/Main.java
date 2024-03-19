@@ -13,7 +13,6 @@ class Main {
     static Random rand;
 
     private static String sdfFilename = "aido99sd.sdf";
-    private static String resultFilename;
     private static String gfuFilename;
     private static String q_gfuFilename;
     private static String dataset;
@@ -40,7 +39,7 @@ class Main {
             allfind.write(
                     "dataset,depth,addPathtoTree(s),Tree_size,Tree_size(new),removeTime(s),addIDtoTree(s),Build_tree(s),memory cost\n");
 
-            for (datasetID = 3; datasetID <= 6; datasetID++) {
+            for (datasetID = 0; datasetID <= 6; datasetID++) {
                 br_whole.write(
                         "dataset,query_set,A/C,(G-C)/(G-A),SP,filtering_time(ms),verification_time(ms),query_time(ms),tree1_search_time(ms),node_fil_time(ms),|In(Q)|,|A(Q)|,|Can(Q)|,|F(Q)|,Num deleted Vertices,total deleted edges Num,codetree_filtime/fil_num,codetree_fil_num,allfil_num/allfil_time,allfil_num,nonfail,verify num,q_trav_num\n");
 
@@ -101,7 +100,7 @@ class Main {
                                 "dataset,query_set,A/C,(G-C)/(G-A),SP,filtering_time(ms),verification_time(ms),query_time(ms),tree1_search_time(ms),node_fil_time(ms),|In(Q)|,|A(Q)|,|Can(Q)|,|F(Q)|,Num deleted Vertices,total deleted edges Num,codetree_filtime/fil_num,codetree_fil_num,allfil_num/allfil_time,allfil_num,nonfail,verify num,q_trav_num\n");
 
                         System.out.println(" ");
-                        resultFilename = String.format("result/%s_result.txt",
+                        String resultFilename = String.format("result/%s_result.txt",
                                 dataset);
 
                         Path res = Paths.get(resultFilename);
@@ -172,9 +171,9 @@ class Main {
                                         } else if (q.left % 10 == 0) {
                                             System.out.print(".");
                                         }
-                                        BitSet result = tree.subgraphSearch(q.right, bw, G.size(), mode,
+                                        BitSet result = tree.subgraphSearch(q.right, bw, mode,
                                                 dataset,
-                                                bwout, allbw, G, q.right.size, gMaps, br_whole);
+                                                bwout, allbw, G, gMaps, br_whole);
 
                                         bw2.write(
                                                 q.left.toString() + " " + result.cardinality() + "個"
@@ -291,37 +290,30 @@ class Main {
 
         if (datasetID == 1) {
             gfuFilename = "pdbs.gfu";
-            resultFilename = "PDBS_result.txt";
             dataset = "pdbs";
             System.out.println("PDBS");
         } else if (datasetID == 2) {
             gfuFilename = "pcms.gfu";
-            resultFilename = "PCM_result.txt";
             dataset = "pcms";
             System.out.println("PCM");
         } else if (datasetID == 3) {
             gfuFilename = "ppigo.gfu";
-            resultFilename = "PPI_result.txt";
             dataset = "ppigo";
             System.out.println("PPI");
         } else if (datasetID == 4) {
             gfuFilename = "IMDB-MULTI.gfu";
-            resultFilename = "IMDB_result.txt";
             dataset = "IMDB-MULTI";
             System.out.println("IMDB");
         } else if (datasetID == 5) {
             gfuFilename = "REDDIT-MULTI-5K.gfu";
-            resultFilename = "REDDIT_result.txt";
             dataset = "REDDIT-MULTI-5K";
             System.out.println("REDDIT");
         } else if (datasetID == 6) {
             gfuFilename = "COLLAB.gfu";
-            resultFilename = "COLLAB_result.txt";
             dataset = "COLLAB";
             System.out.println("COLLAB");
         } else if (datasetID == 0) {
             gfuFilename = "AIDS.gfu";
-            resultFilename = "AIDS_result.txt";
             dataset = "AIDS";
             System.out.println("AIDS");
         }
