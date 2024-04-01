@@ -1028,13 +1028,14 @@ public class IndexNode implements Serializable {
                     // + String.format("%.1f", (double) filtering_edge_num) + ","// 削除できた辺数
                     + String.format("%.1f", (double) removeTotalSize) + ","// 削除できた総辺数
 
-                    + String.format("%.6f", (((double) search_time / 1000 / 1000) / (size *
-                            nonfail - doukeicount)))
-                    + "," + (size * nonfail - doukeicount) + ","
-                    + String.format("%.6f",
-                            (size * nonfail - veq_Can_total)
-                                    / (((double) search_time / 1000 / 1000) + query_per_veqF))
-                    + "," + (size * nonfail - veq_Can_total) + "," + nonfail + "," + verfyNum
+                    // + String.format("%.6f", (((double) search_time / 1000 / 1000) / (size *
+                    // nonfail - doukeicount)))
+                    // + "," + (size * nonfail - doukeicount) + ","
+                    // + String.format("%.6f",
+                    // (size * nonfail - veq_Can_total)
+                    // / (((double) search_time / 1000 / 1000) + query_per_veqF))
+                    // + ","
+                    + (size * nonfail - veq_Can_total) + "," + nonfail + "," + verfyNum
                     + "," + q_trav_num
                     + "\n");
 
@@ -1066,13 +1067,14 @@ public class IndexNode implements Serializable {
                     // + String.format("%.1f", (double) filtering_edge_num) + ","// 削除できた辺数
                     + String.format("%.1f", (double) removeTotalSize) + ","// 削除できた総辺数
 
-                    + String.format("%.6f", (((double) search_time / 1000 / 1000) / (size *
-                            nonfail - doukeicount)))
-                    + "," + (size * nonfail - doukeicount) + ","
-                    + String.format("%.6f",
-                            (size * nonfail - veq_Can_total)
-                                    / (((double) search_time / 1000 / 1000) + query_per_veqF))
-                    + "," + (size * nonfail - veq_Can_total) + "," + nonfail + "," + verfyNum
+                    // + String.format("%.6f", (((double) search_time / 1000 / 1000) / (size *
+                    // nonfail - doukeicount)))
+                    // + "," + (size * nonfail - doukeicount) + ","
+                    // + String.format("%.6f",
+                    // (size * nonfail - veq_Can_total)
+                    // / (((double) search_time / 1000 / 1000) + query_per_veqF))
+                    // + ","
+                    + (size * nonfail - veq_Can_total) + "," + nonfail + "," + verfyNum
                     + "," + q_trav_num
                     + "\n");
             allbw.flush();

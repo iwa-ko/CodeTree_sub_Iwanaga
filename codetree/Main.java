@@ -41,7 +41,7 @@ class Main {
 
             for (datasetID = 0; datasetID <= 6; datasetID++) {
                 br_whole.write(
-                        "dataset,query_set,A/C,(G-C)/(G-A),SP,filtering_time(ms),verification_time(ms),query_time(ms),tree1_search_time(ms),node_fil_time(ms),|In(Q)|,|A(Q)|,|Can(Q)|,|F(Q)|,Num deleted Vertices,total deleted edges Num,codetree_filtime/fil_num,codetree_fil_num,allfil_num/allfil_time,allfil_num,nonfail,verify num,q_trav_num\n");
+                        "dataset,query_set,A/C,(G-C)/(G-A),SP,filtering_time(ms),verification_time(ms),query_time(ms),search_time(ms),node_fil_time(ms),|In(Q)|,|A(Q)|,|Can(Q)|,|F(Q)|,Num deleted Vertices,total deleted edges Num,allfil_num,nonfail,verify num,q_trav_num\n");
 
                 if (datasetID < 0 || datasetID > 6) {
                     System.out.println("無効なデータセットIDです");
@@ -97,7 +97,7 @@ class Main {
                     try (BufferedWriter bw2 = Files.newBufferedWriter(out);
                             BufferedWriter allbw = Files.newBufferedWriter(all);) {
                         allbw.write(
-                                "dataset,query_set,A/C,(G-C)/(G-A),SP,filtering_time(ms),verification_time(ms),query_time(ms),tree1_search_time(ms),node_fil_time(ms),|In(Q)|,|A(Q)|,|Can(Q)|,|F(Q)|,Num deleted Vertices,total deleted edges Num,codetree_filtime/fil_num,codetree_fil_num,allfil_num/allfil_time,allfil_num,nonfail,verify num,q_trav_num\n");
+                                "dataset,query_set,A/C,(G-C)/(G-A),SP,filtering_time(ms),verification_time(ms),query_time(ms),search_time(ms),node_fil_time(ms),|In(Q)|,|A(Q)|,|Can(Q)|,|F(Q)|,Num deleted Vertices,total deleted edges Num,allfil_num,nonfail,verify num,q_trav_num\n");
 
                         System.out.println(" ");
                         String resultFilename = String.format("result/%s_result.txt",
@@ -197,14 +197,6 @@ class Main {
                 } else if (searchID == 2) {
                     // datasetID = 0;
                     System.out.println("スーパーグラフ検索を開始します");
-
-                    // List<Graph> G = new ArrayList<Graph>();
-
-                    // for (int i = 0; i < datasetSize; i++) {
-                    // String filename = String.format("%s/g%d.gfu", dataset, i);
-                    // Graph g = SdfFileReader.readFileQuery_gfu(Paths.get(filename));
-                    // G.add(g);
-                    // }
 
                     List<Graph> G = SdfFileReader.readFile(Paths.get(sdfFilename));
 
