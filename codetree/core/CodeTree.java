@@ -50,12 +50,10 @@ public class CodeTree implements Serializable {
 
             case "pcms":
                 delta = 10;
-                loop = 10;
                 break;
 
             case "ppigo":
                 delta = 5;
-                loop = 20;
                 break;
         }
         for (Graph g : G) {
