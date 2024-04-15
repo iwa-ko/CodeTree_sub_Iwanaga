@@ -9,6 +9,8 @@ public interface GraphCode {
 
         abstract List<CodeFragment> computeCanonicalCode(Graph g, int start, int limDepth);
 
+        abstract List<CodeFragment> computeCanonicalCode(Graph g, int start, int limDepth, boolean[] degreeOne);
+
         abstract List<CodeFragment> computeCanonicalCode_adj(Graph g, int start, int limDepth);
 
         abstract List<Pair<IndexNode, SearchInfo>> beginSearch(Graph g, IndexNode root);

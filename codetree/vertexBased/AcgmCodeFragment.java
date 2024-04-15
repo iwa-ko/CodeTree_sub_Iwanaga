@@ -36,6 +36,7 @@ class AcgmCodeFragment
         AcgmCodeFragment other = (AcgmCodeFragment) other0;
         return vLabel == other.vLabel && Arrays.equals(eLabels, other.eLabels);
     }
+
     // @Override
     // public boolean equals(Object other0) {
 
@@ -153,4 +154,5 @@ class AcgmCodeFragment
     public byte[] getelabel() {
         return this.eLabels;
     }
+
 }

@@ -319,4 +319,54 @@ public class AcgmCode
         // time += System.nanoTime() - t;
         return false;
     }
+
+    @Override
+    public List<CodeFragment> computeCanonicalCode(Graph g, int start, int limDepth, boolean[] degreeOne) {
+        final int n = g.order();
+        ArrayList<CodeFragment> code = new ArrayList<>(n);
+        ArrayList<AcgmSearchInfo> infoList1 = new ArrayList<>();
+
+        code.add(new AcgmCodeFragment(g.vertices[start], 0));
+        if (g.adjList[start].length == 1) {
+            degreeOne[0] = true;
+        }
+
+        infoList1.add(new AcgmSearchInfo(g, start));
+
+        Random rand = new Random(0);
+
+        for (int depth = 1; depth < limDepth; ++depth) {
+            byte[] eLabels = new byte[depth];
+            ArrayList<Integer> next = new ArrayList<>();
+
+            for (AcgmSearchInfo info : infoList1) {
+
+                for (int v = 0; v < n; ++v) {
+                    if (info.open.get(v)) {
+                        next.add(v);
+                    }
+                }
+                if (next.size() == 0) {
+                    return code;
+                }
+
+                int random = rand.nextInt(next.size());
+                int v2 = next.get(random);
+
+                for (int i = 0; i < depth; ++i) {
+                    final int u = info.vertexIDs[i];
+                    eLabels[i] = g.edges[u][v2];
+                }
+
+                AcgmCodeFragment frag = new AcgmCodeFragment(g.vertices[v2], eLabels);
+                if (g.adjList[v2].length == 1) {
+                    degreeOne[depth] = true;
+                }
+                infoList1.clear();
+                infoList1.add(new AcgmSearchInfo(info, g, v2));
+                code.add(frag);
+            }
+        }
+        return code;
+    }
 }

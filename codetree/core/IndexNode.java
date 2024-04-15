@@ -23,6 +23,7 @@ public class IndexNode implements Serializable {
     protected int nodeID;
     protected boolean traverseNecessity;
     protected boolean backtrackNode;
+    protected boolean matchDegreeOne;
 
     protected int traverse_num = 0;
     protected LinkedHashMap<Integer, BitSet> labelFiltering;
@@ -118,6 +119,31 @@ public class IndexNode implements Serializable {
         // g_traverse_num = 0;
         traverseNecessity = true;
         backtrackNode = false;
+        matchDegreeOne = false;
+    }
+
+    IndexNode(IndexNode parent, CodeFragment frag, boolean matchDegreeOne_frag) {
+        this.parent = parent;
+        this.frag = frag;
+
+        children = new ArrayList<>();
+        matchGraphIndicesBitSet = new BitSet();
+        matchGraphIndices = new ArrayList<>();
+        // descendantsMatchGraphIndicesBitSet = new BitSet();
+
+        supNode = false;
+        count = 0;
+        depth = 0;
+        nodeID = 0;
+        adjLabels = new HashSet<>();
+        traverse_num = 0;
+        labelFiltering = new LinkedHashMap<>();
+        childEdgeFrag = new BitSet();
+        // matchGraphMap = new HashMap<>();
+        // g_traverse_num = 0;
+        traverseNecessity = true;
+        backtrackNode = false;
+        matchDegreeOne = matchDegreeOne_frag;
     }
 
     int size() {
@@ -287,6 +313,57 @@ public class IndexNode implements Serializable {
         children.add(m);
 
         m.addPath(cdr, graphIndex, supergraphSearch);
+    }
+
+    public void addPath(List<CodeFragment> code, int graphIndex, boolean supergraphSearch, boolean[] degreeOne) {
+        final int height = code.size();
+
+        if (this.nodeID == 0) {
+            nodeIDcount++;
+            nodeID = nodeIDcount;
+        }
+
+        if (supergraphSearch) {
+            ++count;
+            supNode = true;
+            if (height <= 0 && graphIndex != -1) {
+                matchGraphIndices.add(graphIndex);
+                return;
+            }
+
+        } else {
+            if (graphIndex != -1)
+                matchGraphIndicesBitSet.set(graphIndex, true);
+
+            int dep = -1;
+            for (IndexNode a = this; a != null; a = a.parent) {
+                dep++;
+            }
+            depth = dep;
+            if (height <= 0)
+                return;
+        }
+
+        CodeFragment car = code.get(0);
+        List<CodeFragment> cdr = code.subList(1, height);
+        boolean[] degreeOneR = new boolean[degreeOne.length - 1];
+        for (int i = 1; i < degreeOne.length; i++) {
+            degreeOneR[i - 1] = degreeOne[i];
+        }
+
+        for (IndexNode m : children) {
+            if (m.frag.equals(car) && m.matchDegreeOne == degreeOne[0]) {
+                m.addPath(cdr, graphIndex, supergraphSearch, degreeOneR);
+                return;
+            }
+        }
+
+        IndexNode m = new IndexNode(this, car, degreeOne[0]);
+        if (supergraphSearch)
+            m.supNode = true;
+        children.add(m);
+
+        m.addPath(cdr, graphIndex, supergraphSearch, degreeOneR);
     }
 
     void find_labelFiltering(List<Graph> G, List<IndexNode> trIndexNodes) {
@@ -492,11 +569,15 @@ public class IndexNode implements Serializable {
 
         for (IndexNode m : children) {
             for (Pair<CodeFragment, SearchInfo> frag : nextFrags) {
-                if (m.frag.equals(frag.left)) {// super pattern
+                boolean thisDegree = false;
+                if (q.adjList[frag.right.getVertexIDs()[frag.right.getVertexIDs().length - 1]].length == 1) {
+                    thisDegree = true;
+                }
+                if (m.frag.equals(frag.left) && thisDegree == m.matchDegreeOne) {// super pattern
                     m.doublesearch(q, frag.right, impl, superFrag, traversedNode);
                     if (!traverse)
                         return;
-                } else if (m.frag.bigger(frag.left)) {// super pattern p
+                } else if (m.frag.bigger(frag.left) && thisDegree == m.matchDegreeOne) {// super pattern p
                     superFrag = true;
                     m.doublesearch(q, frag.right, impl, superFrag, traversedNode);
                     if (!traverse)
@@ -548,9 +629,13 @@ public class IndexNode implements Serializable {
             if (!m.traverseNecessity)
                 continue;
             for (Pair<CodeFragment, SearchInfo> frag : nextFrags) {
+                boolean thisDegree = false;
+                if (q.adjList[frag.right.getVertexIDs()[frag.right.getVertexIDs().length - 1]].length == 1) {
+                    thisDegree = true;
+                }
                 if (!m.traverseNecessity)
                     break;
-                if (m.frag.equals(frag.left)) {
+                if (m.frag.equals(frag.left) && thisDegree == m.matchDegreeOne) {
                     // if (frag.left.contains(m.frag)) {
                     m.subsearch(q, frag.right, impl, traversedNode);
                 }
@@ -639,9 +724,13 @@ public class IndexNode implements Serializable {
             if (!m.traverseNecessity)
                 continue;
             for (Pair<CodeFragment, SearchInfo> frag : nextFrags) {
+                boolean thisDegree = false;
+                if (g.adjList[frag.right.getVertexIDs()[frag.right.getVertexIDs().length - 1]].length == 1) {
+                    thisDegree = true;
+                }
                 if (!m.traverseNecessity)
                     break;
-                if (frag.left.contains(m.frag)) {
+                if (frag.left.contains(m.frag) && m.matchDegreeOne == thisDegree) {
                     m.addIDtoTree(g, frag.right, impl);
                 }
             }
@@ -919,7 +1008,7 @@ public class IndexNode implements Serializable {
                 if (Gsize == result.cardinality()) {
                     FPre = 1;
                 } else {
-                    FPre = (double) (Gsize - Can.cardinality() - a_in_count) /
+                    FPre = (double) (Gsize - Can.cardinality() - In.cardinality()) /
                             (Gsize - result.cardinality());
                 }
 
