@@ -18,12 +18,13 @@ public class IndexNode implements Serializable {
     protected int depth;
     protected boolean supNode;
     protected BitSet matchGraphIndicesBitSet;
-    // protected BitSet descendantsMatchGraphIndicesBitSet;
+    protected BitSet matchGraphIndicesBitSetDegree;
     public HashSet<Byte> adjLabels;
     protected int nodeID;
     protected boolean traverseNecessity;
     protected boolean backtrackNode;
     protected boolean matchDegreeOne;
+    protected IndexNode brother;
 
     protected int traverse_num = 0;
     protected LinkedHashMap<Integer, BitSet> labelFiltering;
@@ -105,7 +106,7 @@ public class IndexNode implements Serializable {
         children = new ArrayList<>();
         matchGraphIndicesBitSet = new BitSet();
         matchGraphIndices = new ArrayList<>();
-        // descendantsMatchGraphIndicesBitSet = new BitSet();
+        matchGraphIndicesBitSetDegree = new BitSet();
 
         supNode = false;
         count = 0;
@@ -129,7 +130,7 @@ public class IndexNode implements Serializable {
         children = new ArrayList<>();
         matchGraphIndicesBitSet = new BitSet();
         matchGraphIndices = new ArrayList<>();
-        // descendantsMatchGraphIndicesBitSet = new BitSet();
+        matchGraphIndicesBitSetDegree = new BitSet();
 
         supNode = false;
         count = 0;
@@ -144,6 +145,29 @@ public class IndexNode implements Serializable {
         traverseNecessity = true;
         backtrackNode = false;
         matchDegreeOne = matchDegreeOne_frag;
+        brother = null;
+    }
+
+    IndexNode(IndexNode m) {
+        this.parent = m.parent;
+        this.frag = m.frag;
+
+        children = new ArrayList<>(m.children);
+        matchGraphIndicesBitSet = new BitSet();
+        supNode = false;
+        depth = m.depth;
+        nodeIDcount++;
+        nodeID = nodeIDcount;
+        adjLabels = new HashSet<>(m.adjLabels);
+        traverse_num = m.traverse_num;
+        labelFiltering = new LinkedHashMap<>(m.labelFiltering);
+        childEdgeFrag = (BitSet) m.childEdgeFrag.clone();
+        // matchGraphMap = new HashMap<>();
+        // g_traverse_num = 0;
+        traverseNecessity = true;
+        backtrackNode = false;
+        matchDegreeOne = true;
+        brother = null;
     }
 
     int size() {
@@ -352,9 +376,16 @@ public class IndexNode implements Serializable {
         }
 
         for (IndexNode m : children) {
-            if (m.frag.equals(car) && m.matchDegreeOne == degreeOne[0]) {
-                m.addPath(cdr, graphIndex, supergraphSearch, degreeOneR);
-                return;
+            if (depth == 0) {
+                if (m.frag.equals(car)) {
+                    m.addPath(cdr, graphIndex, supergraphSearch, degreeOneR);
+                    return;
+                }
+            } else {
+                if (m.frag.equals(car) && m.matchDegreeOne == degreeOne[0]) {
+                    m.addPath(cdr, graphIndex, supergraphSearch, degreeOneR);
+                    return;
+                }
             }
         }
 
@@ -364,6 +395,40 @@ public class IndexNode implements Serializable {
         children.add(m);
 
         m.addPath(cdr, graphIndex, supergraphSearch, degreeOneR);
+    }
+
+    void depth_size_histgram(int[] histgram) {
+        histgram[depth]++;
+        if (nodeID == 23) {
+            int a = 0;
+        }
+        for (IndexNode m : children) {
+            m.depth_size_histgram(histgram);
+        }
+    }
+
+    void divideNodeByDeg(int limit_depth) {
+        if (depth > 0 && depth < limit_depth) {
+            children.addAll(getDegTrueNode());
+        }
+        if (depth < limit_depth) {
+            for (IndexNode m : children) {
+                if (!m.matchDegreeOne) {
+                    m.divideNodeByDeg(limit_depth);
+                }
+            }
+        }
+    }
+
+    private List<IndexNode> getDegTrueNode() {
+        List<IndexNode> returnNode = new ArrayList<>();
+        for (IndexNode m : children) {
+            IndexNode newNode = new IndexNode(m);
+            m.brother = newNode;
+            newNode.brother = m;
+            returnNode.add(newNode);
+        }
+        return returnNode;
     }
 
     void find_labelFiltering(List<Graph> G, List<IndexNode> trIndexNodes) {
@@ -422,6 +487,8 @@ public class IndexNode implements Serializable {
 
         init_Bitset();
         init_traverse();// reset travers num
+        nodeFilteringByDeg.clear();
+        non_nodeFilteringByDeg.clear();
         root = this;
         Can.or(matchGraphIndicesBitSet);// Can ← G
         List<IndexNode> traversedNode = new ArrayList<>(this.children);
@@ -434,8 +501,6 @@ public class IndexNode implements Serializable {
                 if (!traverse)
                     break;
             }
-            // a_in_count = In.cardinality();
-            // in_count += a_in_count;
             result.or(In);
 
             if (!traverse) {
@@ -449,29 +514,24 @@ public class IndexNode implements Serializable {
             }
             a_in_count = 0;
             initTraverseNecessity();
+            if (Can.cardinality() == 0) {
+                int a = 0;
+            }
         }
-        // a_fil_count = G.size() - Can.cardinality();
 
         infoList = null;
 
-        // contains_search += System.nanoTime() - start;
-
         if (Can.cardinality() != 0) {
             verfyNum++;
-            // fil_count += a_fil_count;
             a_filterTime = System.nanoTime() - start;
-
-            // search_time += a_filterTime;// filtering time
 
             start = System.nanoTime();
 
             find_labelFiltering(G, traversedNode);
 
+            deg_nodeFiltering(G);
+
             a_nodeFiltering_time = System.nanoTime() - start;
-
-            // nodeFiltering_time += a_nodeFiltering_time;
-
-            // doukeicount += Can.cardinality();
 
             write_file_for_Ver(G, q, gMaps);
 
@@ -522,6 +582,19 @@ public class IndexNode implements Serializable {
         return result;
     }
 
+    private void deg_nodeFiltering(List<Graph> G) {
+        nodeFilteringByDeg.removeAll(non_nodeFilteringByDeg);
+        for (IndexNode n : nodeFilteringByDeg) {
+            for (int trueIndex = Can.nextSetBit(0); trueIndex != -1; trueIndex = Can
+                    .nextSetBit(++trueIndex)) {
+                BitSet labelFrag = n.labelFiltering.get(trueIndex);
+                if (labelFrag != null) {
+                    G.get(trueIndex).filterFlag.or(labelFrag);
+                }
+            }
+        }
+    }
+
     static int q_trav_num = 0;
 
     private void doublesearch(Graph q, SearchInfo info, GraphCode impl, boolean superFrag,
@@ -569,15 +642,11 @@ public class IndexNode implements Serializable {
 
         for (IndexNode m : children) {
             for (Pair<CodeFragment, SearchInfo> frag : nextFrags) {
-                boolean thisDegree = false;
-                if (q.adjList[frag.right.getVertexIDs()[frag.right.getVertexIDs().length - 1]].length == 1) {
-                    thisDegree = true;
-                }
-                if (m.frag.equals(frag.left) && thisDegree == m.matchDegreeOne) {// super pattern
+                if (m.frag.equals(frag.left)) {// super pattern
                     m.doublesearch(q, frag.right, impl, superFrag, traversedNode);
                     if (!traverse)
                         return;
-                } else if (m.frag.bigger(frag.left) && thisDegree == m.matchDegreeOne) {// super pattern p
+                } else if (m.frag.bigger(frag.left)) {// super pattern p
                     superFrag = true;
                     m.doublesearch(q, frag.right, impl, superFrag, traversedNode);
                     if (!traverse)
@@ -590,38 +659,33 @@ public class IndexNode implements Serializable {
 
     // BitSet backtrackBitSet = new BitSet();
 
-    private void subsearch(Graph q, SearchInfo info, GraphCode impl, List<IndexNode> traversedNode) {
+    static Set<IndexNode> nodeFilteringByDeg = new HashSet<>();
+    static Set<IndexNode> non_nodeFilteringByDeg = new HashSet<>();
+
+    private void subsearch(Graph q, SearchInfo info, GraphCode impl,
+            List<IndexNode> traversedNode) {
         q_trav_num++;
         // traverse_num++;
         if (depth == 1) {
             if (traversedNode.contains(this))
                 traversedNode.remove(this);
+        } else if (q.adjList[info.getVertexIDs()[info.getVertexIDs().length -
+                1]].length > 1) {
+            nodeFilteringByDeg.add(this);
+        } else if (q.adjList[info.getVertexIDs()[info.getVertexIDs().length -
+                1]].length == 1
+                && nodeFilteringByDeg.contains(this)) {
+            non_nodeFilteringByDeg.add(this);
         }
-        // if (depth == 1)
-        // Can.and(matchGraphMap.get(traverse_num));
-        // else
-        // Can.and(matchGraphIndicesBitSet);
+
         Can.and(matchGraphIndicesBitSet);
 
-        if (backtrackNode || backtrackJudge(q.order)) {
+        if (backtrackNode ||
+                backtrackJudge(q.order)) {
             traverseNecessity = false;
             initTraverseNecessity.add(this);
             return;
         }
-
-        // if (matchGraphIndicesBitSet.cardinality() ==
-        // descendantsMatchGraphIndicesBitSet.cardinality()) {// first
-        // traverseNecessity = false;
-        // initTraverseNecessity.add(this);
-        // return;
-        // }
-        // backtrackBitSet.or(descendantsMatchGraphIndicesBitSet);
-        // backtrackBitSet.or(Can);
-        // if (backtrackBitSet.equals(descendantsMatchGraphIndicesBitSet)) {// second
-        // traverseNecessity = false;
-        // initTraverseNecessity.add(this);
-        // return;
-        // }
 
         List<Pair<CodeFragment, SearchInfo>> nextFrags = impl.enumerateFollowableFragments(q, info, adjLabels);
 
@@ -629,17 +693,300 @@ public class IndexNode implements Serializable {
             if (!m.traverseNecessity)
                 continue;
             for (Pair<CodeFragment, SearchInfo> frag : nextFrags) {
-                boolean thisDegree = false;
-                if (q.adjList[frag.right.getVertexIDs()[frag.right.getVertexIDs().length - 1]].length == 1) {
-                    thisDegree = true;
-                }
                 if (!m.traverseNecessity)
                     break;
-                if (m.frag.equals(frag.left) && thisDegree == m.matchDegreeOne) {
-                    // if (frag.left.contains(m.frag)) {
+                if (m.frag.equals(frag.left)) {
                     m.subsearch(q, frag.right, impl, traversedNode);
                 }
             }
+        }
+    }
+
+    // private void doublesearch(Graph q, SearchInfo info, GraphCode impl, boolean
+    // superFrag,
+    // List<IndexNode> traversedNode) {
+    // boolean nowFrag = superFrag;
+    // if (depth == 1) {
+    // if (traversedNode.contains(this))
+    // traversedNode.remove(this);
+    // }
+    // q_trav_num++;
+    // traverse_num++;
+    // if (!superFrag) {
+    // Can.and(matchGraphIndicesBitSet);
+    // // if (depth == 1)
+    // // Can.and(matchGraphMap.get(traverse_num));
+    // // else
+    // // Can.and(matchGraphIndicesBitSet);
+    // }
+
+    // if (depth == q.order) {
+    // In.or(matchGraphIndicesBitSet);
+    // // result.or(matchGraphIndicesBitSet);
+    // if (!superFrag)// 誘導部分グラフとなるパターンを辿っているため
+    // traverse = false;
+    // return;
+    // }
+
+    // if (children.size() == 0 || backtrackJudge(q.order)) {
+    // return;
+    // }
+
+    // if (!In.isEmpty() && superFrag) {
+    // U.xor(In);
+    // U.and(Can);
+    // U.and(matchGraphIndicesBitSet);
+
+    // if (U.isEmpty()) { // if U and ID(n) = null then backtrack
+    // U.or(root.matchGraphIndicesBitSet);
+    // return;
+    // }
+    // U.or(root.matchGraphIndicesBitSet);
+    // }
+
+    // List<Pair<CodeFragment, SearchInfo>> nextFrags =
+    // impl.enumerateFollowableFragments(q, info, adjLabels);
+
+    // Set<Byte> targetVlabel = targetVlabel(nextFrags, q);
+    // for (IndexNode m : children) {
+    // for (Pair<CodeFragment, SearchInfo> frag : nextFrags) {
+    // if (targetVlabel.contains(frag.left.getVlabel())) {
+    // boolean thisDegreeOne = false;
+    // if (q.adjList[frag.right.getVertexIDs()[depth]].length == 1) {
+    // thisDegreeOne = true;
+    // }
+    // if (thisDegreeOne) {
+    // if (m.frag.equals(frag.left)) {// super pattern
+    // m.doublesearch(q, frag.right, impl, superFrag, traversedNode);
+    // if (!traverse)
+    // return;
+    // } else if (m.frag.bigger(frag.left)) {// super pattern p
+    // superFrag = true;
+    // m.doublesearch(q, frag.right, impl, superFrag, traversedNode);
+    // if (!traverse)
+    // return;
+    // }
+    // } else {
+    // if (m.frag.equals(frag.left) && !m.matchDegreeOne) {// super pattern
+    // m.doublesearch(q, frag.right, impl, superFrag, traversedNode);
+    // if (!traverse)
+    // return;
+    // } else if (m.frag.bigger(frag.left) && !m.matchDegreeOne) {// super pattern p
+    // superFrag = true;
+    // m.doublesearch(q, frag.right, impl, superFrag, traversedNode);
+    // if (!traverse)
+    // return;
+    // }
+
+    // }
+
+    // } else {
+    // if (m.frag.equals(frag.left)) {// super pattern
+    // m.doublesearch(q, frag.right, impl, superFrag, traversedNode);
+    // if (!traverse)
+    // return;
+    // } else if (m.frag.bigger(frag.left)) {// super pattern p
+    // superFrag = true;
+    // m.doublesearch(q, frag.right, impl, superFrag, traversedNode);
+    // if (!traverse)
+    // return;
+    // }
+    // }
+    // superFrag = nowFrag;
+    // }
+    // }
+    // // for (IndexNode m : children) {
+    // // for (Pair<CodeFragment, SearchInfo> frag : nextFrags) {
+    // // if (m.frag.equals(frag.left)) {// super pattern
+    // // m.doublesearch(q, frag.right, impl, superFrag, traversedNode);
+    // // if (!traverse)
+    // // return;
+    // // } else if (m.frag.bigger(frag.left)) {// super pattern p
+    // // superFrag = true;
+    // // m.doublesearch(q, frag.right, impl, superFrag, traversedNode);
+    // // if (!traverse)
+    // // return;
+    // // }
+    // // superFrag = nowFrag;
+    // // }
+    // // }
+    // }
+
+    private Set<Byte> targetVlabel(List<Pair<CodeFragment, SearchInfo>> nextFrags, Graph q) {
+        Set<Byte> target = new HashSet<>();
+        Set<Byte> nonTarget = new HashSet<>();
+        for (int i = 0; i < nextFrags.size(); i++) {
+            Pair<CodeFragment, SearchInfo> frag = nextFrags.get(i);
+            byte vlabel = frag.left.getVlabel();
+            if (target.contains(vlabel)) {
+                nonTarget.add(vlabel);
+            } else {
+                target.add(vlabel);
+            }
+        }
+        target.removeAll(nonTarget);
+        return target;
+    }
+
+    // private boolean getPossibleDegree(List<Pair<CodeFragment, SearchInfo>>
+    // nextFrags, Graph q) {
+    // boolean result = true;
+    // byte vlabel;
+
+    // for (int i = 0; i < nextFrags.size(); i++) {
+    // Pair<CodeFragment, SearchInfo> frag = nextFrags.get(i);
+    // if (i == 0) {
+
+    // }
+    // }
+    // for (Pair<CodeFragment, SearchInfo> frag : nextFrags) {
+    // int v = frag.right.getVertexIDs()[frag.right.getVertexIDs().length - 1];
+
+    // }
+    // return result;
+    // }
+
+    // private void subsearch(Graph q, SearchInfo info, GraphCode impl,
+    // List<IndexNode> traversedNode) {
+    // q_trav_num++;
+    // // traverse_num++;
+    // if (depth == 1) {
+    // if (traversedNode.contains(this))
+    // traversedNode.remove(this);
+    // }
+
+    // Can.and(matchGraphIndicesBitSet);
+
+    // if (backtrackNode || backtrackJudge(q.order)) {
+    // traverseNecessity = false;
+    // initTraverseNecessity.add(this);
+    // return;
+    // }
+
+    // List<Pair<CodeFragment, SearchInfo>> nextFrags =
+    // impl.enumerateFollowableFragments(q, info, adjLabels);
+    // Set<Byte> targetVlabel = targetVlabel(nextFrags, q);
+
+    // for (IndexNode m : children) {
+    // if (!m.traverseNecessity)
+    // continue;
+    // for (Pair<CodeFragment, SearchInfo> frag : nextFrags) {
+    // if (!m.traverseNecessity)
+    // break;
+
+    // if (targetVlabel.contains(frag.left.getVlabel())) {
+    // boolean thisDegreeOne = false;
+    // if (q.adjList[frag.right.getVertexIDs()[depth]].length == 1) {
+    // thisDegreeOne = true;
+    // }
+    // if (thisDegreeOne) {
+    // if (m.frag.equals(frag.left)) {
+    // m.subsearch(q, frag.right, impl, traversedNode);
+    // }
+    // } else {
+    // if (m.frag.equals(frag.left) && !m.matchDegreeOne) {
+    // m.subsearch(q, frag.right, impl, traversedNode);
+    // }
+    // }
+    // } else {
+    // if (m.frag.equals(frag.left)) {
+    // m.subsearch(q, frag.right, impl, traversedNode);
+    // }
+    // }
+    // }
+    // }
+    // }
+
+    // private void subsearch(Graph q, SearchInfo info, GraphCode impl,
+    // List<IndexNode> traversedNode) throws IOException {
+    // q_trav_num++;
+    // // traverse_num++;
+    // if (depth == 1) {
+    // if (traversedNode.contains(this))
+    // traversedNode.remove(this);
+    // }
+    // // if (depth == 1)
+    // // Can.and(matchGraphMap.get(traverse_num));
+    // // else
+    // // Can.and(matchGraphIndicesBitSet);
+    // // Can.and(matchGraphIndicesBitSet);
+
+    // if (backtrackNode || backtrackJudge(q.order)) {
+    // traverseNecessity = false;
+    // initTraverseNecessity.add(this);
+    // return;
+    // }
+
+    // List<Pair<CodeFragment, SearchInfo>> nextFrags =
+    // impl.enumerateFollowableFragments(q, info, adjLabels);
+    // Set<Byte> targetVlabel = targetVlabel(nextFrags, q);
+
+    // for (IndexNode m : children) {
+    // if (!m.traverseNecessity)
+    // continue;
+
+    // if (m.matchGraphIndicesBitSet.size() == 0)
+    // continue;
+    // for (Pair<CodeFragment, SearchInfo> frag : nextFrags) {
+    // if (!m.traverseNecessity)
+    // break;
+
+    // if (targetVlabel.contains(frag.left.getVlabel()) && m.brother != null) {
+    // boolean thisDegreeOne = false;
+    // if (q.adjList[frag.right.getVertexIDs()[depth]].length == 1) {
+    // thisDegreeOne = true;
+    // }
+    // if (thisDegreeOne) {
+    // if (m.frag.equals(frag.left)) {
+    // BitSet brosID = (BitSet) m.matchGraphIndicesBitSet.clone();
+    // brosID.or(m.brother.matchGraphIndicesBitSet);
+    // Can.and(brosID);
+    // if (Can.cardinality() == 0) {
+    // int a = 0;
+    // }
+    // m.subsearch(q, frag.right, impl, traversedNode);
+    // }
+    // } else {
+    // if (m.frag.equals(frag.left) && !m.matchDegreeOne) {
+    // if (m.matchGraphIndicesBitSet.size() == 0) {
+    // int a = 0;
+    // }
+    // Can.and(m.matchGraphIndicesBitSet);
+    // if (Can.cardinality() == 0) {
+    // int a = 0;
+    // }
+    // m.subsearch(q, frag.right, impl, traversedNode);
+    // }
+    // }
+    // } else {
+    // if (m.frag.equals(frag.left) && !m.matchDegreeOne) {
+    // if (m.brother != null) {
+    // BitSet brosID = (BitSet) m.matchGraphIndicesBitSet.clone();
+    // brosID.or(m.brother.matchGraphIndicesBitSet);
+    // Can.and(brosID);
+    // } else {
+    // Can.and(m.matchGraphIndicesBitSet);
+    // }
+    // if (m.matchGraphIndicesBitSet.size() == 0) {
+    // m.node2pattern();
+    // int a = 0;
+    // }
+    // if (Can.cardinality() == 0) {
+    // int a = 0;
+    // }
+    // m.subsearch(q, frag.right, impl, traversedNode);
+    // }
+    // }
+    // }
+    // }
+    // }
+
+    private void node2pattern() throws IOException {
+        List<CodeFragment> code = getCode();
+        Graph g = generateGraph(code, nodeID);
+        Path output = Paths.get("patten.gfu");
+        try (BufferedWriter bw = Files.newBufferedWriter(output)) {
+            g.writeGraph2Gfu(bw);
         }
     }
 
@@ -667,12 +1014,6 @@ public class IndexNode implements Serializable {
     }
 
     void initTraverseNecessity() {
-        // traverseNecessity = true;
-        // g_traverse_num = 0;
-
-        // for (IndexNode m : children) {
-        // m.initTraverseNecessity();
-        // }
         for (IndexNode m : initTraverseNecessity) {
             m.traverseNecessity = true;
         }
@@ -697,6 +1038,12 @@ public class IndexNode implements Serializable {
                 labelFiltering.put(g.id, new BitSet(g.order));
             }
             labelFiltering.get(g.id).set(info.getVertexIDs()[0]);
+        } else if (g.adjList[info.getVertexIDs()[depth - 1]].length == 1) {
+            if (labelFiltering.get(g.id) == null) {
+                labelFiltering.put(g.id, new BitSet(g.order));
+            }
+            labelFiltering.get(g.id).set(info.getVertexIDs()[depth - 1]);
+
         }
 
         matchGraphIndicesBitSet.set(g.id, true);
@@ -724,13 +1071,17 @@ public class IndexNode implements Serializable {
             if (!m.traverseNecessity)
                 continue;
             for (Pair<CodeFragment, SearchInfo> frag : nextFrags) {
-                boolean thisDegree = false;
-                if (g.adjList[frag.right.getVertexIDs()[frag.right.getVertexIDs().length - 1]].length == 1) {
-                    thisDegree = true;
-                }
                 if (!m.traverseNecessity)
                     break;
-                if (frag.left.contains(m.frag) && m.matchDegreeOne == thisDegree) {
+                // boolean thisDegree = false;
+                // if (g.adjList[frag.right.getVertexIDs()[frag.right.getVertexIDs().length -
+                // 1]].length == 1) {
+                // thisDegree = true;
+                // }
+                // if (frag.left.contains(m.frag) && m.matchDegreeOne == thisDegree) {
+                // m.addIDtoTree(g, frag.right, impl);
+                // }
+                if (frag.left.contains(m.frag)) {
                     m.addIDtoTree(g, frag.right, impl);
                 }
             }

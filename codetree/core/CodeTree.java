@@ -63,11 +63,11 @@ public class CodeTree implements Serializable {
                 Graph inducedGraph = g.generateInducedGraph(targetVertices);
                 start_vertice = rand.nextInt(inducedGraph.order);
                 boolean[] degreeOne = new boolean[delta];
-                code = impl.computeCanonicalCode(inducedGraph, start_vertice, delta,
-                        degreeOne);
-                // code = impl.computeCanonicalCode(inducedGraph, start_vertice, delta);
-                root.addPath(code, g.id, false, degreeOne);
-                // root.addPath(code, g.id, false);
+                // code = impl.computeCanonicalCode(inducedGraph, start_vertice, delta,
+                // degreeOne);
+                // root.addPath(code, g.id, false, degreeOne);
+                code = impl.computeCanonicalCode(inducedGraph, start_vertice, delta);
+                root.addPath(code, g.id, false);
             }
         }
 
@@ -102,6 +102,16 @@ public class CodeTree implements Serializable {
         leafGraphs = null;
         treesize = root.size();
         System.out.println("tree size (枝刈り後): " + treesize);
+
+        int[] histgram = new int[delta + 1];
+        root.depth_size_histgram(histgram);
+        System.out.println(Arrays.toString(histgram));
+        // root.divideNodeByDeg(3);
+        // histgram = new int[delta + 1];
+        // root.depth_size_histgram(histgram);
+        // System.out.println(Arrays.toString(histgram));
+
+        // System.out.println("tree size (追加): " + root.size());
 
         bw.write("Tree size(new): " + treesize + "\n");
         index.write(
