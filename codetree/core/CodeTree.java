@@ -10,7 +10,9 @@ import java.util.*;
 public class CodeTree implements Serializable {
     GraphCode impl;
     public IndexNode root;
-    public int delta;
+    public
+
+    int delta;
     Random rand;
 
     static int seed = 22;
@@ -202,6 +204,7 @@ public class CodeTree implements Serializable {
             }
             root.addIDtoTree(g, impl);
             // root.init_g_traverse();
+            root.noDegNodeFilteringNode(g.id);
             root.initTraverseNecessity();
         }
     }
