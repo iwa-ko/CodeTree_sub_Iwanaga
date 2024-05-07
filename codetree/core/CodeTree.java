@@ -26,8 +26,8 @@ public class CodeTree implements Serializable {
 
         List<CodeFragment> code = new ArrayList<>();
 
-        long start = System.nanoTime();
         int loop = 1;
+        long start = System.nanoTime();
 
         switch (dataset) {
             case "AIDS":
@@ -52,19 +52,23 @@ public class CodeTree implements Serializable {
 
             case "pcms":
                 delta = 10;
+                loop = 10;
                 break;
 
             case "ppigo":
                 delta = 5;
+                delta = 4;
+                loop = 100;
                 break;
         }
+
         for (Graph g : G) {
             for (int l = 0; l < loop; l++) {
                 int start_vertice = rand.nextInt(g.order);
                 HashSet<Integer> targetVertices = g.getTargetVertices(delta, start_vertice);
                 Graph inducedGraph = g.generateInducedGraph(targetVertices);
                 start_vertice = rand.nextInt(inducedGraph.order);
-                boolean[] degreeOne = new boolean[delta];
+                // boolean[] degreeOne = new boolean[delta];
                 // code = impl.computeCanonicalCode(inducedGraph, start_vertice, delta,
                 // degreeOne);
                 // root.addPath(code, g.id, false, degreeOne);
