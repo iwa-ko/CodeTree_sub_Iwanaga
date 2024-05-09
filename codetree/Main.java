@@ -39,7 +39,7 @@ class Main {
             allfind.write(
                     "dataset,depth,addPathtoTree(s),Tree_size,Tree_size(new),removeTime(s),addIDtoTree(s),Build_tree(s),memory cost\n");
 
-            for (datasetID = 0; datasetID <= 3; datasetID++) {
+            for (datasetID = 2; datasetID <= 2; datasetID++) {
                 br_whole.write(
                         "dataset,query_set,A/C,(G-C)/(G-A),SP,filtering_time(ms),verification_time(ms),query_time(ms),search_time(ms),node_fil_time(ms),|In(Q)|,|A(Q)|,|Can(Q)|,|F(Q)|,Num deleted Vertices,total deleted edges Num,allfil_num,nonfail,verify num,q_trav_num\n");
 
@@ -57,7 +57,10 @@ class Main {
                     final int minedge = 4;
                     final int maxedge = 64;
 
+                    long start_read = System.nanoTime();
                     List<Graph> G = SdfFileReader.readFile_gfu(Paths.get(gfuFilename));
+                    start_read = System.nanoTime() - start_read;
+                    System.out.println(dataset + " dataset load time:" + start_read / 1000 / 1000 / 1000 + "s");
 
                     for (int numOfEdge = minedge; numOfEdge <= maxedge; numOfEdge *= 2) {
                         ArrayList<Pair<Integer, Graph>> qset = new ArrayList<>();
@@ -135,10 +138,10 @@ class Main {
                             for (ArrayList<Pair<Integer, Graph>> Q_set : Q) {
 
                                 adjust[count++] = index;
-                                if (dataset.equals("ppigo") && (index == 64)) {
-                                    index *= 2;
-                                    continue;
-                                }
+                                // if (dataset.equals("ppigo") && (index == 64)) {
+                                // index *= 2;
+                                // continue;
+                                // }
 
                                 if (index <= maxedge) {
                                     System.out.println("\nQ" + index + "R");

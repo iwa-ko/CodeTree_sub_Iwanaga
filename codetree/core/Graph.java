@@ -8,34 +8,26 @@ import codetree.common.*;
 
 public class Graph implements Serializable {
     public final int id;
-
     public final byte[] vertices;
     public byte[][] edges;
-
     public int[][] adjList;
-
     public int size;
     public int order;
+    public BitSet filterFlag;
+    public HashMap<Integer, BitSet> edgeBitset;
 
     static Random rand;
-
-    public BitSet filterFlag;
-
-    public HashMap<Integer, BitSet> edgeBitset;
 
     public Graph(int id, byte[] vertices, byte[][] edges) {
         this.id = id;
         this.vertices = vertices;
         this.edges = edges;
-
         this.order = this.order();
         this.size = this.size();
-
-        adjList = makeAdjList();
-
         filterFlag = new BitSet();
-
-        edgeBitset = this.getEdgeBitset(adjList);
+        edgeBitset = this.getEdgeBitset();
+        // adjList = makeAdjList();
+        // adjList = null;
     }
 
     private HashMap<Integer, BitSet> getEdgeBitset(int[][] adjList) {
@@ -48,6 +40,26 @@ public class Graph implements Serializable {
             for (int j : adjList[i]) {
                 value.set(j);
             }
+            edgeBitset.put(i, value);
+        }
+        return edgeBitset;
+    }
+
+    private HashMap<Integer, BitSet> getEdgeBitset() {
+
+        HashMap<Integer, BitSet> edgeBitset = new HashMap<>();
+
+        int n = order;
+        for (int i = 0; i < n; i++) {
+            BitSet value = new BitSet();
+            for (int j = 0; j < n; j++) {
+                if (edges[i][j] > 0) {
+                    value.set(j);
+                }
+            }
+            // for (int j : adjList[i]) {
+            // value.set(j);
+            // }
             edgeBitset.put(i, value);
         }
         return edgeBitset;
@@ -534,7 +546,9 @@ public class Graph implements Serializable {
         boolean[] visited = new boolean[order];
         visited[start_vertice] = true;
         BitSet open = new BitSet();
-        for (int v : adjList[start_vertice]) {
+        for (int v = edgeBitset.get(start_vertice).nextSetBit(0); v != -1; v = edgeBitset.get(start_vertice)
+                .nextSetBit(++v)) {
+            // for (int v : adjList[start_vertice]) {
             open.set(v);
         }
 
@@ -561,7 +575,9 @@ public class Graph implements Serializable {
             start_vertice = next.get(random);
             target.add(start_vertice);
             visited[start_vertice] = true;
-            for (int v : adjList[start_vertice]) {
+            for (int v = edgeBitset.get(start_vertice).nextSetBit(0); v != -1; v = edgeBitset.get(start_vertice)
+                    .nextSetBit(++v)) {
+                // for (int v : adjList[start_vertice]) {
                 // if (!visited[v]) {
                 open.set(v);
                 // }s
@@ -583,7 +599,8 @@ public class Graph implements Serializable {
         int count2 = 0;
         for (int v : targetVertices) {
             for (int u : targetVertices) {
-                if (edges[v][u] == 1) {
+                // if (edges[v][u] == 1) {
+                if (edgeBitset.get(v).get(u)) {
                     newedges[count][count2] = 1;
                     newedges[count2][count] = 1;
                 }

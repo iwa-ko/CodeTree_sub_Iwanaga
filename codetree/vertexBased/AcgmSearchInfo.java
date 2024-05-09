@@ -1,6 +1,5 @@
 package codetree.vertexBased;
 
-import java.util.ArrayList;
 import java.util.BitSet;
 
 import codetree.core.*;
@@ -20,10 +19,14 @@ final class AcgmSearchInfo
 
         open = new BitSet(n);
 
-        int[] adj = g.adjList[v0];
-        for (int u : adj) {
+        BitSet adj = g.edgeBitset.get(v0);
+        for (int u = adj.nextSetBit(0); u != -1; u = adj.nextSetBit(++u)) {
             open.set(u);
         }
+        // int[] adj = g.adjList[v0];
+        // for (int u : adj) {
+        // open.set(u);
+        // }
 
         // closed = new BitSet(n);
         // closed.set(v0);
@@ -48,17 +51,24 @@ final class AcgmSearchInfo
         open.set(v, false);
         // closed.set(v);
 
-        int[] adj = g.adjList[v];
-        // for (int u : adj) {
-        // if (!closed.get(u)) {
-        // open.set(u);
-        // }
-        // }
-        for (int u : adj) {
+        BitSet adj = g.edgeBitset.get(v);
+        for (int u = adj.nextSetBit(0); u != -1; u = adj.nextSetBit(++u)) {
             if (contain(vertexIDs, u)) {
                 open.set(u);
             }
         }
+
+        // int[] adj = g.adjList[v];
+        // // for (int u : adj) {
+        // // if (!closed.get(u)) {
+        // // open.set(u);
+        // // }
+        // // }
+        // for (int u : adj) {
+        // if (contain(vertexIDs, u)) {
+        // open.set(u);
+        // }
+        // }
     }
 
     AcgmSearchInfo(AcgmSearchInfo src, Graph g, Integer v, int noOpne) {
