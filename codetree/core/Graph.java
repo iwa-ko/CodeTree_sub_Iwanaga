@@ -16,6 +16,8 @@ public class Graph implements Serializable {
     public BitSet filterFlag;
     public HashMap<Integer, BitSet> edgeBitset;
 
+    public HashMap<Integer, Set<IndexNode>> FVQ;
+
     static Random rand;
 
     public Graph(int id, byte[] vertices, byte[][] edges) {
@@ -26,8 +28,12 @@ public class Graph implements Serializable {
         this.size = this.size();
         filterFlag = new BitSet();
         edgeBitset = this.getEdgeBitset();
+
+        FVQ = new HashMap<>(order);
+        for (int v = 0; v < order; v++) {
+            FVQ.put(v, new HashSet<>());
+        }
         // adjList = makeAdjList();
-        // adjList = null;
     }
 
     private HashMap<Integer, BitSet> getEdgeBitset(int[][] adjList) {
@@ -57,9 +63,6 @@ public class Graph implements Serializable {
                     value.set(j);
                 }
             }
-            // for (int j : adjList[i]) {
-            // value.set(j);
-            // }
             edgeBitset.put(i, value);
         }
         return edgeBitset;
@@ -108,6 +111,20 @@ public class Graph implements Serializable {
         }
 
         return s;
+    }
+
+    public int minDegreeVertices() {
+        int minDeg = Integer.MAX_VALUE;
+        int v = 0;
+        for (int i = 0; i < order; i++) {
+            if (this.edgeBitset.get(i).cardinality() == 1) {
+                return i;
+            } else if (minDeg > this.edgeBitset.get(i).cardinality()) {
+                minDeg = this.edgeBitset.get(i).cardinality();
+                v = i;
+            }
+        }
+        return v;
     }
 
     public double degree() {
@@ -293,6 +310,85 @@ public class Graph implements Serializable {
 
     public byte getVertexLabel(int index) {
         return vertices[index];
+    }
+
+    public HashMap<Byte, Integer> getLabelMap() {
+
+        HashMap<Byte, Integer> labelMap = new HashMap<>();
+        for (byte v : vertices) {
+            if (labelMap.get(v) == null) {
+                labelMap.put(v, 1);
+            } else {
+                int value = labelMap.get(v) + 1;
+                labelMap.put(v, value);
+            }
+        }
+
+        return labelMap;
+    }
+
+    public HashSet<Integer> getTargetVertices(int limDepth, int start_vertice) {
+        HashSet<Integer> target = new HashSet<>();
+        target.add(start_vertice);
+        Random rand = new Random(0);
+        boolean[] visited = new boolean[order];
+        visited[start_vertice] = true;
+        BitSet open = new BitSet();
+        for (int v = edgeBitset.get(start_vertice).nextSetBit(0); v != -1; v = edgeBitset.get(start_vertice)
+                .nextSetBit(++v)) {
+            open.set(v);
+        }
+
+        for (int i = 0; i < limDepth - 1; i++) {
+            ArrayList<Integer> next = new ArrayList<>();
+
+            for (int v = open.nextSetBit(0); v != -1; v = open
+                    .nextSetBit(++v)) {
+                if (!visited[v]) {
+                    next.add(v);
+                }
+            }
+
+            if (next.size() == 0) {
+                return target;
+            }
+
+            int random = rand.nextInt(next.size());
+            start_vertice = next.get(random);
+            target.add(start_vertice);
+            visited[start_vertice] = true;
+            for (int v = edgeBitset.get(start_vertice).nextSetBit(0); v != -1; v = edgeBitset.get(start_vertice)
+                    .nextSetBit(++v)) {
+                open.set(v);
+            }
+        }
+        return target;
+    }
+
+    public Graph generateInducedGraph(HashSet<Integer> targetVertices) {
+
+        int n = targetVertices.size();
+        byte[] newvertices = new byte[n];
+        byte[][] newedges = new byte[n][n];
+        int count = 0;
+        for (int v : targetVertices) {
+            newvertices[count++] = vertices[v];
+        }
+        count = 0;
+        int count2 = 0;
+        for (int v : targetVertices) {
+            for (int u : targetVertices) {
+                if (edgeBitset.get(v).get(u)) {
+                    newedges[count][count2] = 1;
+                    newedges[count2][count] = 1;
+                }
+                count2++;
+            }
+            count++;
+            count2 = 0;
+        }
+
+        return new Graph(id, newvertices, newedges);
     }
 
     public void writeGraph2Gfu(BufferedWriter bw2) throws IOException {
@@ -524,94 +620,6 @@ public class Graph implements Serializable {
 
     }
 
-    public HashMap<Byte, Integer> getLabelMap() {
-
-        HashMap<Byte, Integer> labelMap = new HashMap<>();
-        for (byte v : vertices) {
-            if (labelMap.get(v) == null) {
-                labelMap.put(v, 1);
-            } else {
-                int value = labelMap.get(v) + 1;
-                labelMap.put(v, value);
-            }
-        }
-
-        return labelMap;
-    }
-
-    public HashSet<Integer> getTargetVertices(int limDepth, int start_vertice) {
-        HashSet<Integer> target = new HashSet<>();
-        target.add(start_vertice);
-        Random rand = new Random(0);
-        boolean[] visited = new boolean[order];
-        visited[start_vertice] = true;
-        BitSet open = new BitSet();
-        for (int v = edgeBitset.get(start_vertice).nextSetBit(0); v != -1; v = edgeBitset.get(start_vertice)
-                .nextSetBit(++v)) {
-            // for (int v : adjList[start_vertice]) {
-            open.set(v);
-        }
-
-        for (int i = 0; i < limDepth - 1; i++) {
-            ArrayList<Integer> next = new ArrayList<>();
-
-            for (int v = open.nextSetBit(0); v != -1; v = open
-                    .nextSetBit(++v)) {
-                if (!visited[v]) {
-                    next.add(v);
-                }
-            }
-
-            // for (int v : adjList[start_vertice]) {
-            // if (!visited[v]) {
-            // next.add(v);
-            // }
-            // }
-            if (next.size() == 0) {
-                return target;
-            }
-
-            int random = rand.nextInt(next.size());
-            start_vertice = next.get(random);
-            target.add(start_vertice);
-            visited[start_vertice] = true;
-            for (int v = edgeBitset.get(start_vertice).nextSetBit(0); v != -1; v = edgeBitset.get(start_vertice)
-                    .nextSetBit(++v)) {
-                // for (int v : adjList[start_vertice]) {
-                // if (!visited[v]) {
-                open.set(v);
-                // }s
-            }
-        }
-        return target;
-    }
-
-    public Graph generateInducedGraph(HashSet<Integer> targetVertices) {
-
-        int n = targetVertices.size();
-        byte[] newvertices = new byte[n];
-        byte[][] newedges = new byte[n][n];
-        int count = 0;
-        for (int v : targetVertices) {
-            newvertices[count++] = vertices[v];
-        }
-        count = 0;
-        int count2 = 0;
-        for (int v : targetVertices) {
-            for (int u : targetVertices) {
-                // if (edges[v][u] == 1) {
-                if (edgeBitset.get(v).get(u)) {
-                    newedges[count][count2] = 1;
-                    newedges[count2][count] = 1;
-                }
-                count2++;
-            }
-            count++;
-            count2 = 0;
-        }
-
-        return new Graph(id, newvertices, newedges);
-    }
 }
 
 // private Map<Byte, List<Integer>> makeVlabelMap() {

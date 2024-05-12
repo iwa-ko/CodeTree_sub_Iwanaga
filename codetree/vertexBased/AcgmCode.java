@@ -148,13 +148,13 @@ public class AcgmCode
         byte[] eLabels = new byte[depth];
         for (int v = 0; v < n; ++v) {
 
-            if (!info.open.get(v)) {// 未探索頂点のみが捜索対象
+            if (!info.open.get(v)) {
                 continue;
             }
 
             for (int i = 0; i < depth; ++i) {
                 final int u = info.vertexIDs[i];
-                eLabels[i] = g.edges[u][v];// 辺ラベル決定
+                eLabels[i] = g.edges[u][v];
             }
 
             frags.add(new Pair<CodeFragment, SearchInfo>(
@@ -224,7 +224,7 @@ public class AcgmCode
 
             for (int i = 0; i < depth; ++i) {
                 final int u = info.vertexIDs[i];
-                eLabels[i] = g.edges[u][v];// 辺ラベル決定
+                eLabels[i] = g.edges[u][v];
             }
 
             frags.add(new Pair<CodeFragment, SearchInfo>(
@@ -234,18 +234,75 @@ public class AcgmCode
         return frags;
     }
 
-    // static long time = 0;
-
     boolean contain(int[] vertexIDs, int num) {
-        // long t = System.nanoTime();
         for (int i : vertexIDs) {
             if (i == num) {
-                // time += System.nanoTime() - t;
                 return true;
             }
         }
-        // time += System.nanoTime() - t;
         return false;
+    }
+
+    @Override
+    public List<CodeFragment> computeCode(Graph g, int start, int limDepth) {
+        final int n = g.order();
+        ArrayList<CodeFragment> code = new ArrayList<>(limDepth);
+        ArrayList<AcgmSearchInfo> infoList1 = new ArrayList<>();
+
+        start = g.minDegreeVertices();
+
+        code.add(new AcgmCodeFragment(g.vertices[start], 0));
+
+        infoList1.add(new AcgmSearchInfo(g, start));
+
+        Random rand = new Random(0);
+
+        ArrayList<Integer> next = new ArrayList<>();
+        ArrayList<Integer> past = new ArrayList<>();
+        for (int depth = 1; depth < limDepth; ++depth) {
+            byte[] eLabels = new byte[depth];
+            next.clear();
+            past.clear();
+
+            for (AcgmSearchInfo info : infoList1) {
+
+                for (int v = 0; v < n; ++v) {
+                    if (info.open.get(v) && g.edgeBitset.get(info.vertexIDs[depth - 1]).get(v)) {
+                        next.add(v);
+                    } else if (info.open.get(v)) {
+                        past.add(v);
+                    }
+                }
+                int v2 = 0;
+                if (next.size() == 0) {
+                    if (past.size() == 0) {
+                        return code;
+                    }
+                    int random = rand.nextInt(past.size());
+                    v2 = past.get(random);
+                    for (int i = 0; i < depth - 1; ++i) {
+                        final int u = info.vertexIDs[i];
+                        eLabels[i] = g.edges[u][v2];
+                    }
+                    eLabels[depth - 1] = 1;
+
+                } else {
+                    int random = rand.nextInt(next.size());
+                    v2 = next.get(random);
+
+                    for (int i = 0; i < depth; ++i) {
+                        final int u = info.vertexIDs[i];
+                        eLabels[i] = g.edges[u][v2];
+                    }
+                }
+
+                AcgmCodeFragment frag = new AcgmCodeFragment(g.vertices[v2], eLabels);
+                infoList1.clear();
+                infoList1.add(new AcgmSearchInfo(info, g, v2));
+                code.add(frag);
+            }
+        }
+        return code;
     }
 
 }

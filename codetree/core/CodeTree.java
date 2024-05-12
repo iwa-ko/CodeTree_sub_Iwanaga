@@ -1,6 +1,9 @@
 package codetree.core;
 
 import java.io.Serializable;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.io.BufferedWriter;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -10,18 +13,14 @@ import java.util.*;
 public class CodeTree implements Serializable {
     GraphCode impl;
     public IndexNode root;
-    public
-
-    int delta;
+    public int delta;
     Random rand;
-
-    static int seed = 22;
 
     public CodeTree(GraphCode impl, List<Graph> G, BufferedWriter bw, String dataset,
             BufferedWriter index) throws IOException {
 
         this.impl = impl;
-        this.root = new IndexNode(null, null, 0, false, G.size());
+        this.root = new IndexNode(null, null, 0, false);
         rand = new Random(2);
 
         List<CodeFragment> code = new ArrayList<>();
@@ -57,11 +56,30 @@ public class CodeTree implements Serializable {
                 break;
 
             case "ppigo":
+                rand = new Random(4);
                 delta = 5;
                 delta = 4;
                 loop = 100;
                 break;
         }
+
+        // Path p = Paths.get("patten.gfu");
+        // try (BufferedWriter p_bw = Files.newBufferedWriter(p)) {
+        // for (Graph g : G) {
+        // for (int l = 0; l < loop; l++) {
+        // int start_vertice = rand.nextInt(g.order);
+        // HashSet<Integer> targetVertices = g.getTargetVertices(delta, start_vertice);
+        // Graph inducedGraph = g.generateInducedGraph(targetVertices);
+        // inducedGraph.writeGraph2Gfu(p_bw);
+        // code = impl.computeCode(inducedGraph, 0, delta);
+        // print(code);
+        // root.addPath(code, g.id, false, 0);
+        // }
+        // }
+        // } catch (IOException e) {
+        // System.out.println(e);
+        // System.exit(0);
+        // }
 
         for (Graph g : G) {
             for (int l = 0; l < loop; l++) {
@@ -70,27 +88,27 @@ public class CodeTree implements Serializable {
                 Graph inducedGraph = g.generateInducedGraph(targetVertices);
                 start_vertice = rand.nextInt(inducedGraph.order);
                 code = impl.computeCanonicalCode(inducedGraph, start_vertice, delta);
-                root.addPath(code, g.id, false, 0, G.size());
+                // print(code);
+                root.addPath(code, g.id, false, 0);
             }
         }
 
         List<ArrayList<CodeFragment>> codelist = impl.computeCanonicalCode(Graph.numOflabels(G));
         for (ArrayList<CodeFragment> c : codelist) {
-            root.addPath(c, -1, false, 0, G.size());
+            root.addPath(c, -1, false, 0);
         }
         codelist = null;
 
         index.write(dataset + "," + delta + ","
-                + String.format("%.6f", (double) (System.nanoTime() - start) / 1000 / 1000 / 1000) +
-                ",");
+                + String.format("%.6f", (double) (System.nanoTime() - start) / 1000 / 1000 / 1000) + ",");
 
         int treesize = root.size();
 
         System.out.println("depth " + (delta));
         bw.write("delta" + (delta) + "\n");
         System.out.println("Tree size: " + treesize);
-        System.out.println("addPathtoTree(s): " + String.format("%.6f", (double) (System.nanoTime() - start) / 1000 /
-                1000 / 1000));
+        System.out.println("addPathtoTree(s): "
+                + String.format("%.6f", (double) (System.nanoTime() - start) / 1000 / 1000 / 1000));
         bw.write("addPathtoTree(s): " + String.format("%.6f", (double) (System.nanoTime() - start) / 1000 / 1000 / 1000)
                 + "\n");
 
@@ -99,6 +117,7 @@ public class CodeTree implements Serializable {
         long time = System.nanoTime();
         List<Graph> leafGraphs = new ArrayList<>();
         root.getLeafGraph(leafGraphs);
+
         searchByLeafGraph(impl, leafGraphs);
         root.removeTree();
         root.init_removeNode();
@@ -109,12 +128,6 @@ public class CodeTree implements Serializable {
         int[] histgram = new int[delta + 1];
         root.depth_size_histgram(histgram);
         System.out.println(Arrays.toString(histgram));
-        // root.divideNodeByDeg(3);
-        // histgram = new int[delta + 1];
-        // root.depth_size_histgram(histgram);
-        // System.out.println(Arrays.toString(histgram));
-
-        // System.out.println("tree size (追加): " + root.size());
 
         bw.write("Tree size(new): " + treesize + "\n");
         index.write(
@@ -171,16 +184,23 @@ public class CodeTree implements Serializable {
         }
     }
 
+    private void print(List<CodeFragment> code) {
+        for (CodeFragment c : code) {
+            System.out.print(c.getVlabel() + ":" + Arrays.toString(c.getelabel()).toString() + " ");
+        }
+        System.out.println();
+    }
+
     public CodeTree(GraphCode impl, List<Graph> G, int b) {
         this.impl = impl;
-        this.root = new IndexNode(null, null, 0, true, G.size());
+        this.root = new IndexNode(null, null, 0, true);
 
         System.out.print("Indexing");
         for (int i = 0; i < G.size(); ++i) {
             Graph g = G.get(i);
 
             List<CodeFragment> code = impl.computeCanonicalCode(g, b);// 準正準コードを得る
-            root.addPath(code, i, true, 0, G.size());
+            root.addPath(code, i, true, 0);
 
             if (i % 100000 == 0) {
                 System.out.println();
@@ -190,6 +210,7 @@ public class CodeTree implements Serializable {
                 System.out.print(".");
             }
         }
+        root.addInfo();
 
         System.out.println();
         System.out.println("Tree size: " + root.size());
@@ -204,7 +225,6 @@ public class CodeTree implements Serializable {
                 System.out.print(".");
             }
             root.addIDtoTree(g, impl);
-            // root.init_g_traverse();
             root.initTraverseNecessity();
         }
     }
@@ -228,15 +248,6 @@ public class CodeTree implements Serializable {
         return root.search(query, impl);
     }
 
-    // public BitSet subgraphSearch(Graph query, BufferedWriter bw, int size, String
-    // mode, String dataset,
-    // BufferedWriter bwout, BufferedWriter allbw, List<Graph> G, int qsize,
-    // HashMap<Integer, ArrayList<String>> gMaps, BufferedWriter br_whole)
-    // throws IOException, InterruptedException {
-    // return root.subsearch(query, impl, size, bw, mode, dataset, bwout, allbw, G,
-    // "Query", qsize, gMaps, delta,
-    // br_whole);
-    // }
     public BitSet subgraphSearch(Graph query, BufferedWriter bw, String mode, String dataset,
             BufferedWriter bwout, BufferedWriter allbw, List<Graph> G,
             HashMap<Integer, ArrayList<String>> gMaps, BufferedWriter br_whole)
