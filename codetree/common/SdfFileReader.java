@@ -112,6 +112,11 @@ public class SdfFileReader {
         final int size = Integer.parseInt(mol.get(2 + order));
         byte[][] edges = new byte[order][order];
 
+        HashMap<Integer, BitSet> edgeBitset = new HashMap<>();
+        for (int i = 0; i < order; i++) {
+            edgeBitset.put(i, new BitSet());
+        }
+
         for (int i = 0; i < size; ++i) {
             line = mol.get(3 + order + i);
             String[] nums = line.split(" ");
@@ -121,8 +126,11 @@ public class SdfFileReader {
 
             edges[v][u] = (byte) w;
             edges[u][v] = (byte) w;
+
+            edgeBitset.get(v).set(u);
+            edgeBitset.get(u).set(v);
         }
-        return new Graph(id, vertices, edges);
+        return new Graph(id, vertices, edges, edgeBitset);
     }
 
     // 読み込んだラインが$$$$ならば次のグラフ
@@ -157,7 +165,14 @@ public class SdfFileReader {
         }
 
         byte[][] edges = new byte[order][order];
+
+        HashMap<Integer, BitSet> edgeBitset = new HashMap<>();
+        for (int i = 0; i < order; i++) {
+            edgeBitset.put(i, new BitSet());
+        }
+
         for (int i = 0; i < size; ++i) {
+
             line = mol.get(4 + order + i);
             final int v = Integer.parseInt(line.substring(0, 3).trim()) - 1;
             final int u = Integer.parseInt(line.substring(3, 6).trim()) - 1;
@@ -165,9 +180,13 @@ public class SdfFileReader {
 
             edges[v][u] = (byte) w;
             edges[u][v] = (byte) w;
+
+            edgeBitset.get(v).set(u);
+            edgeBitset.get(u).set(v);
+
         }
 
-        return new Graph(id, vertices, edges);
+        return new Graph(id, vertices, edges, edgeBitset);
     }
 
     // 部分グラフ同型判定時に指定したインデクスのグラフを得る

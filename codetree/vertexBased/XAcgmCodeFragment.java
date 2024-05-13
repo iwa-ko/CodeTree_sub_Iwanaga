@@ -73,11 +73,6 @@ class XAcgmCodeFragment
     }
 
     @Override
-    public boolean contains1(CodeFragment other0) {
-        return false;
-    }
-
-    @Override
     public byte getVlabel() {
         return this.vLabel;
     }
@@ -86,6 +81,18 @@ class XAcgmCodeFragment
     public byte[] getelabel() {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'getelabel'");
+    }
+
+    @Override
+    public boolean bigger(CodeFragment other) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'bigger'");
+    }
+
+    @Override
+    public boolean contains_adj(CodeFragment other) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'contains_adj'");
     }
 }
 

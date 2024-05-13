@@ -218,6 +218,19 @@ public class XAcgmCode
         throw new UnsupportedOperationException("Unimplemented method 'enumerateFollowableFragments'");
     }
 
+    @Override
+    public List<CodeFragment> computeCode(Graph g, int start, int limDepth) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'computeCode'");
+    }
+
+    @Override
+    public List<Pair<CodeFragment, SearchInfo>> enumerateFollowableFragments(Graph g, SearchInfo info,
+            HashSet<Byte> adjLabels, BitSet childEdgeFrag) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'enumerateFollowableFragments'");
+    }
+
 }
 // package codetree.vertexBased;
 

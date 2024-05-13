@@ -56,7 +56,6 @@ public class CodeTree implements Serializable {
                 break;
 
             case "ppigo":
-                rand = new Random(4);
                 delta = 5;
                 delta = 4;
                 loop = 100;
@@ -98,6 +97,8 @@ public class CodeTree implements Serializable {
             root.addPath(c, -1, false, 0);
         }
         codelist = null;
+
+        root.sortChildren();
 
         index.write(dataset + "," + delta + ","
                 + String.format("%.6f", (double) (System.nanoTime() - start) / 1000 / 1000 / 1000) + ",");
@@ -149,7 +150,6 @@ public class CodeTree implements Serializable {
                 / 1000 / 1000));
 
         time = System.nanoTime();
-        // root.sortChildren();
         // root.addDescendantsIDs();
         // root.printCanSize();
         root.checkBacktrackNode();

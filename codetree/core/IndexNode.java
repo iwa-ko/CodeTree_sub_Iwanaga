@@ -23,20 +23,15 @@ public class IndexNode implements Serializable {
     protected boolean traverseNecessity;
     protected boolean backtrackNode;
     protected int q_traverse_num;
-    // protected int q_maxDeg;
     protected LinkedHashMap<Integer, BitSet> labelFiltering;
-    protected BitSet childEdgeFrag;
-    protected Map<Integer, Integer> path_count;
-    protected HashMap<Integer, Integer> maxLabelMap;// int[] dept
-    protected HashMap<Integer, BitSet> start_gv;// int[] dept
-    // protected int[] maxLabelMap2;// int[] dept
+    protected BitSet childEdgeFragAnd;
+    protected BitSet childEdgeFragOr;
 
     static BitSet In = new BitSet();
     static BitSet Can = new BitSet();
     static BitSet result = new BitSet();
     static BitSet U = new BitSet();
     static IndexNode root;
-
     static ArrayList<Integer> can = new ArrayList<>();
     static final Runtime runtime = Runtime.getRuntime();
     static final Path out = Paths.get("datagraph.gfu");
@@ -88,8 +83,6 @@ public class IndexNode implements Serializable {
     static int verfyNum = 0;
     static int fail = 0;
     static int labelNumFiltering = 0;
-    static int labelFiltering_time = 0;
-    static int degfiltering_sum = 0;
     static double ms_per_fil = 0;
     static boolean traverse;
     static ArrayList<IndexNode> removeNode = new ArrayList<>();
@@ -105,23 +98,23 @@ public class IndexNode implements Serializable {
         adjLabels = new HashSet<>();
         q_traverse_num = 0;
         labelFiltering = new LinkedHashMap<>();
-        childEdgeFrag = new BitSet();
         traverseNecessity = true;
         backtrackNode = false;
-        path_count = new HashMap<>();
-        if (dep == 1) {
-            // maxLabelMap = new HashMap<>();
-            // q_maxDeg = 0;
-            // maxLabelMap2 = new int[Gsize];
-        }
+
         if (supergraphSearchNode) {
             count = 0;
             matchGraphIndices = new ArrayList<>();
         } else {
             matchGraphIndicesBitSet = new BitSet();
             nodeID = nodeIDcount++;
-            start_gv = new HashMap<>();
         }
+
+        childEdgeFragAnd = new BitSet(dep);
+        for (int i = 0; i < dep; i++) {
+            childEdgeFragAnd.flip(i);
+        }
+        childEdgeFragOr = new BitSet();
+
     }
 
     int size() {
@@ -147,36 +140,23 @@ public class IndexNode implements Serializable {
     }
 
     void addInfo() {
-        for (IndexNode m : children) {
-            adjLabels.add(m.frag.getVlabel());
-            for (int v = 0; v < depth; v++) {
-                if (m.frag.getelabel()[v] > 0)
-                    childEdgeFrag.set(v);
+        if (depth > 0) {
+            for (IndexNode m : children) {
+                adjLabels.add(m.frag.getVlabel());
+                BitSet eFragBitSet = new BitSet();
+                for (int v = 0; v < depth; v++) {
+                    if (m.frag.getelabel()[v] > 0) {
+                        childEdgeFragOr.set(v);
+                        eFragBitSet.set(v);
+                    }
+                }
+                childEdgeFragAnd.and(eFragBitSet);
             }
         }
         for (IndexNode m : children) {
             m.addInfo();
         }
     }
-
-    // void addDescendantsIDs() {
-    // for (IndexNode m : children) {
-    // m.descendantsMatchGraphIndicesBitSet.or(m.matchGraphIndicesBitSet);
-    // m.getDescendantsMatchGraphIndicesBitSet(m);
-    // m.addDescendantsIDs();
-    // }
-
-    // }
-
-    // private void getDescendantsMatchGraphIndicesBitSet(IndexNode target) {
-    // for (IndexNode m : children) {
-    // target.descendantsMatchGraphIndicesBitSet.and(m.matchGraphIndicesBitSet);
-    // // target.descendantsMatchGraphIndicesBitSet.or(m.matchGraphIndicesBitSet);
-    // //
-    // System.out.println(target.descendantsMatchGraphIndicesBitSet.cardinality());
-    // m.getDescendantsMatchGraphIndicesBitSet(target);
-    // }
-    // }
 
     static int backtrackNodeNum = 0;
     static int backtrackNodeNum_leaf = 0;
@@ -277,9 +257,6 @@ public class IndexNode implements Serializable {
         }
     }
 
-    static long deg_nodeFiltering_time = 0;
-    static long label_nodeFiltering_time = 0;
-
     BitSet subsearch(Graph q, GraphCode impl, BufferedWriter bw, String mode, String dataset,
             BufferedWriter bw_data, BufferedWriter allbw, List<Graph> G,
             String directory, HashMap<Integer, ArrayList<String>> gMaps, int delta, BufferedWriter br_whole)
@@ -322,17 +299,13 @@ public class IndexNode implements Serializable {
             } else {
                 Can.andNot(In);
             }
-            if (sikiiti > 0)// ここで、閾値>2の場合、supergraphのノードも対象になるので誤検出・注意!!
-                filtering_by_count();
+
         } else {
             for (Pair<IndexNode, SearchInfo> info : infoList) {
                 info.left.subsearch(q, info.right, impl, traversedNode);
             }
             a_in_count = 0;
             initTraverseNecessity();
-            if (sikiiti > 0)
-                filtering_by_count();
-            // filtering_second_step(G, q);
         }
 
         infoList = null;
@@ -341,18 +314,8 @@ public class IndexNode implements Serializable {
             verfyNum++;
             a_filterTime = System.nanoTime() - start;
 
-            // start = System.nanoTime();
-
-            // deg_nodeFiltering(G);
-            // deg_nodeFiltering_ver2(G);
-
-            // deg_nodeFiltering_time += System.nanoTime() - start;
-
-            // getNodeFiltering_num(G);
-
             start = System.nanoTime();
             find_labelFiltering(G, traversedNode);
-            label_nodeFiltering_time += System.nanoTime() - start;
 
             a_nodeFiltering_time = System.nanoTime() - start;
 
@@ -397,109 +360,18 @@ public class IndexNode implements Serializable {
             System.out.println("(G-C/(G-A)):" + String.format("%.5f", FPratio / nonfail));
             System.out.println("C:" + doukeicount);
             System.out.println("A:" + totoal_kai);
-            // System.out.println("deg_filtering_num:" + degfiltering_sum);
-            System.out.println("label_NumFiltering:" + (labelNumFiltering - degfiltering_sum));
             System.out.println("search time per q" + ((double) search_time / 1000 / 1000 / 100) + " ms");
-            // System.out.println("deg_fil_tine per q" + ((double) deg_nodeFiltering_time /
-            // 1000 / 1000 / 100) + " ms");
-            // System.out
-            // .println("label_fil_tine per q" + ((double) label_nodeFiltering_time / 1000 /
-            // 1000 / 100) + " ms");
-            // System.out.println("削除できた頂点数/|Can(Q)|:" + (double) query_per_nf_count /
-            // (doukeicount + lab_fil_num));
             System.out.println("verification time per q" + (verification_time / 100) + " ms");
-
             System.out.println("query time:" + String.format("%.3f", ((double) search_time / 1000 / 1000 +
-                    verification_time + (double) (deg_nodeFiltering_time + label_nodeFiltering_time) / 1000 / 1000)
+                    verification_time + nodeFiltering_time / 1000 / 1000)
                     / 100));
-
             write_file(allbw, bw, G.size(), br_whole);
             init_param();
-            deg_nodeFiltering_time = 0;
-            labelFiltering_time = 0;
-            label_nodeFiltering_time = 0;
         }
         return result;
     }
 
-    private void filtering_second_step(List<Graph> G, Graph q) {
-        BitSet mgv = new BitSet();
-        for (int id = Can.nextSetBit(0); id != -1; id = Can.nextSetBit(++id)) {
-            for (int v = 0; v < q.order; v++) {
-                mgv.clear();
-                int loop_count = 0;
-                if (q.FVQ.get(v).size() == 0)
-                    continue;
-                for (IndexNode n : q.FVQ.get(v)) {
-                    if (loop_count == 0) {
-                        mgv.or(n.start_gv.get(id));
-                    } else {
-                        mgv.and(n.start_gv.get(id));
-                    }
-                    // System.out.println(mgv.cardinality());
-                    loop_count++;
-                }
-                if (mgv.isEmpty()) {
-                    // if (mgv.cardinality() == G.get(id).order) {
-                    Can.set(id, false);
-                    break;
-                }
-            }
-        }
-
-    }
-
-    // private void filtering_by_deg() {
-    // for (IndexNode n : children) {
-    // if (n.q_maxDeg == 0)
-    // continue;
-    // else {
-    // for (int id = Can.nextSetBit(0); id != -1; id = Can.nextSetBit(++id)) {
-    // if (n.matchGraphIndicesBitSet.get(id) && n.maxLabelMap.get(id) < n.q_maxDeg)
-    // {
-    // Can.set(id, false);
-    // }
-    // }
-    // n.q_maxDeg = 0;
-    // }
-    // }
-    // }
-
-    private void filtering_by_count() {
-        for (IndexNode m : this.children) {
-            if (m.q_traverse_num < 1)
-                continue;
-            for (int id = Can.nextSetBit(0); id != -1; id = Can.nextSetBit(++id)) {
-                if (!m.matchGraphIndicesBitSet.get(id))
-                    continue;
-                if (m.path_count.get(id) < m.q_traverse_num) {
-                    Can.set(id, false);
-                    continue;
-                }
-                // if (m.matchGraphIndicesBitSet.get(id) && m.path_count.get(id) <
-                // m.q_traverse_num) {
-                // Can.set(id, false);
-                // }
-
-                // if (m.depth == 1 && m.maxLabelMap.get(id) < m.q_maxDeg) {
-                // Can.set(id, false);
-                // }
-
-                // if (m.depth == 1 && m.maxLabelMap2[id] < m.q_maxDeg) {
-                // Can.set(id, false);
-                // }
-            }
-            // m.q_maxDeg = 0;
-
-            if (m.depth == sikiiti)
-                continue;
-            m.filtering_by_count();
-        }
-
-    }
-
     void find_labelFiltering(List<Graph> G, List<IndexNode> trIndexNodes) {
-
         for (IndexNode m : trIndexNodes) {
             int mapsize = m.labelFiltering.size();
             int cansize = Can.cardinality();
@@ -526,12 +398,6 @@ public class IndexNode implements Serializable {
         }
     }
 
-    // void getNodeFiltering_num(List<Graph> G) {
-    // for (Graph g : G) {
-    // degfiltering_sum += g.filterFlag.cardinality();
-    // }
-    // }
-
     void getlabelFiltering_num(List<Graph> G) {
         for (Graph g : G) {
             labelNumFiltering += g.filterFlag.cardinality();
@@ -551,10 +417,6 @@ public class IndexNode implements Serializable {
         q_traverse_num++;
         if (!superFrag) {
             Can.and(matchGraphIndicesBitSet);
-            // if (depth == 1)
-            // Can.and(matchGraphMap.get(q_traverse_num));
-            // else
-            // Can.and(matchGraphIndicesBitSet);
         }
 
         if (depth == q.order) {
@@ -565,7 +427,7 @@ public class IndexNode implements Serializable {
             return;
         }
 
-        if (children.size() == 0 || (depth > sikiiti && backtrackJudge(q.order))) {
+        if (children.size() == 0 || backtrackJudge(q.order)) {
             return;
         }
 
@@ -609,36 +471,14 @@ public class IndexNode implements Serializable {
                 traversedNode.remove(this);
         }
 
-        // if (depth == 1) {
-        // // int deg_v = q.adjList[info.getVertexIDs()[depth - 1]].length;
-        // int deg_v = q.edgeBitset.get(info.getVertexIDs()[depth - 1]).cardinality();
-        // if (q_maxDeg < deg_v) {
-        // q_maxDeg = deg_v;
-        // }
-        // }
-
-        if (depth == sikiiti) {
-            q.FVQ.get(info.getVertexIDs()[0]).add(this);
-        }
-
         Can.and(matchGraphIndicesBitSet);
 
-        // if (backtrackNode) {
-        // return;
-        // }
-
-        if (depth > sikiiti && (backtrackNode || backtrackJudge(q.order))) {
+        if (backtrackNode ||
+                backtrackJudge(q.order)) {
             traverseNecessity = false;
             initTraverseNecessity.add(this);
             return;
         }
-
-        // if (backtrackNode ||
-        // backtrackJudge(q.order)) {
-        // traverseNecessity = false;
-        // initTraverseNecessity.add(this);
-        // return;
-        // }
 
         List<Pair<CodeFragment, SearchInfo>> nextFrags = impl.enumerateFollowableFragments(q, info, adjLabels);
 
@@ -692,72 +532,29 @@ public class IndexNode implements Serializable {
         }
     }
 
-    HashSet<Byte> thisAdjLavels = new HashSet<>();
-    BitSet thisChildEdgeFrag = new BitSet();
-    static int sikiiti = 0;
-
     private void addIDtoTree(Graph g, SearchInfo info, GraphCode impl) {
         traverse_cou++;
         if (depth == 1) {
             if (labelFiltering.get(g.id) == null) {
                 labelFiltering.put(g.id, new BitSet(g.order));
-                // maxLabelMap.put(g.id, 0);
             }
             labelFiltering.get(g.id).set(info.getVertexIDs()[0]);
-
-            // int deg_v = g.edgeBitset.get(info.getVertexIDs()[depth - 1]).cardinality();
-
-            // if (maxLabelMap2[g.id] < deg_v) {
-            // maxLabelMap2[g.id] = deg_v;
-            // }
-
-            // if (maxLabelMap.get(g.id) < deg_v) {
-            // // max_deg_v = deg_v;
-            // maxLabelMap.put(g.id, deg_v);
-            // }
-        }
-
-        if (depth <= sikiiti) {
-            if (path_count.get(g.id) == null) {
-                path_count.put(g.id, 1);
-            } else {
-                int cou = path_count.get(g.id);
-                path_count.put(g.id, ++cou);
-            }
-
-            if (depth == sikiiti) {
-                if (start_gv.get(g.id) == null) {
-                    BitSet value = new BitSet(g.order);
-                    // for (int i = 0; i < g.order; i++) {
-                    // value.flip(i);
-                    // }
-                    start_gv.put(g.id, value);
-                }
-                // start_gv.get(g.id).set(info.getVertexIDs()[0], false);
-                start_gv.get(g.id).set(info.getVertexIDs()[0], true);
-            }
         }
 
         matchGraphIndicesBitSet.set(g.id, true);
 
-        if (children.size() == 0 || (depth > sikiiti && backtrackJudge(g.order, g.id))) {
+        if (children.size() == 0 || backtrackJudge(g.order, g.id)) {
             traverseNecessity = false;
             initTraverseNecessity.add(this);
             return;
         }
 
-        for (IndexNode m : children) {
-            if (!m.traverseNecessity)
-                continue;
-            thisAdjLavels.add(m.frag.getVlabel());
-            for (int v = 0; v < depth; v++) {
-                if (m.frag.getelabel()[v] > 0)
-                    thisChildEdgeFrag.set(v);
-            }
+        List<Pair<CodeFragment, SearchInfo>> nextFrags;
+        if (childEdgeFragAnd.cardinality() > 0) {
+            nextFrags = impl.enumerateFollowableFragments(g, info, adjLabels, childEdgeFragAnd);
+        } else {
+            nextFrags = impl.enumerateFollowableFragments(g, info, adjLabels, childEdgeFragOr);
         }
-
-        List<Pair<CodeFragment, SearchInfo>> nextFrags = impl.enumerateFollowableFragments(g, info, thisAdjLavels,
-                thisChildEdgeFrag);
 
         for (IndexNode m : children) {
             if (!m.traverseNecessity)
@@ -904,13 +701,10 @@ public class IndexNode implements Serializable {
                     int[] map = new int[g.order];
                     int[] pam = new int[g.order];
                     boolean allZeros;
-                    // int[] adj;
                     BitSet adj = new BitSet();
                     for (int v = g.filterFlag.nextClearBit(0); v < g.order; v = g.filterFlag.nextClearBit(++v)) {
                         allZeros = true; // 一行が全て0かどうかを示すフラグ
-                        // adj = g.adjList[v];
                         adj = g.edgeBitset.get(v);
-                        // for (int u : adj) {
                         for (int u = adj.nextSetBit(0); u != -1; u = adj.nextSetBit(++u)) {
                             if (g.filterFlag.get(u))
                                 continue;
@@ -951,9 +745,7 @@ public class IndexNode implements Serializable {
                     bw2.write(newSize + "\n");
 
                     for (int i = 0; i < newOrder; i++) {
-                        // adj = g.adjList[map[i]];
                         adj = g.edgeBitset.get(map[i]);
-                        // for (int j : adj) {
                         for (int j = adj.nextSetBit(0); j != -1; j = adj.nextSetBit(++j)) {
                             if (g.filterFlag.get(j) || i > pam[j])
                                 continue;
@@ -1199,7 +991,6 @@ public class IndexNode implements Serializable {
     private void init_param() {
         deletedVsumPerq_set = 0;
         ms_per_fil = 0;
-        degfiltering_sum = 0;
         fail = 0;
         removeTotalSize = 0;
         removeTotalGraphs = 0;
@@ -1232,7 +1023,6 @@ public class IndexNode implements Serializable {
         lab_fil_num = 0;
         labelNumFiltering = 0;
         verfyNum = 0;
-        labelFiltering_time = 0;
         q_trav_num = 0;
         traverse_cou = 0;
         deletedVsumPerq = 0;
@@ -1279,7 +1069,7 @@ public class IndexNode implements Serializable {
         // List<Pair<CodeFragment, SearchInfo>> nextFrags =
         // impl.enumerateFollowableFragments(q, info, thisAdjLavels);
         List<Pair<CodeFragment, SearchInfo>> nextFrags = impl.enumerateFollowableFragments(q, info, adjLabels,
-                childEdgeFrag);
+                childEdgeFragOr);
 
         for (IndexNode m : children) {
             if (m.count > 0 && m.supNode) {
@@ -1765,3 +1555,96 @@ public class IndexNode implements Serializable {
 // + nonfail + "," + verfyNum
 // + "," + q_trav_num + "," + ms_per_fil / nonfail
 // + "\n");
+
+// private void filtering_second_step(List<Graph> G, Graph q) {
+// BitSet mgv = new BitSet();
+// for (int id = Can.nextSetBit(0); id != -1; id = Can.nextSetBit(++id)) {
+// for (int v = 0; v < q.order; v++) {
+// mgv.clear();
+// int loop_count = 0;
+// if (q.FVQ.get(v).size() == 0)
+// continue;
+// for (IndexNode n : q.FVQ.get(v)) {
+// if (loop_count == 0) {
+// mgv.or(n.start_gv.get(id));
+// } else {
+// mgv.and(n.start_gv.get(id));
+// }
+// // System.out.println(mgv.cardinality());
+// loop_count++;
+// }
+// if (mgv.isEmpty()) {
+// // if (mgv.cardinality() == G.get(id).order) {
+// Can.set(id, false);
+// break;
+// }
+// }
+// }
+// }
+
+// private void filtering_by_deg() {
+// for (IndexNode n : children) {
+// if (n.q_maxDeg == 0)
+// continue;
+// else {
+// for (int id = Can.nextSetBit(0); id != -1; id = Can.nextSetBit(++id)) {
+// if (n.matchGraphIndicesBitSet.get(id) && n.maxLabelMap.get(id) < n.q_maxDeg)
+// {
+// Can.set(id, false);
+// }
+// }
+// n.q_maxDeg = 0;
+// }
+// }
+// }
+
+// private void filtering_by_count() {
+// for (IndexNode m : this.children) {
+// if (m.q_traverse_num < 1)
+// continue;
+// for (int id = Can.nextSetBit(0); id != -1; id = Can.nextSetBit(++id)) {
+// if (!m.matchGraphIndicesBitSet.get(id))
+// continue;
+// if (m.path_count.get(id) < m.q_traverse_num) {
+// Can.set(id, false);
+// continue;
+// }
+// // if (m.matchGraphIndicesBitSet.get(id) && m.path_count.get(id) <
+// // m.q_traverse_num) {
+// // Can.set(id, false);
+// // }
+
+// // if (m.depth == 1 && m.maxLabelMap.get(id) < m.q_maxDeg) {
+// // Can.set(id, false);
+// // }
+
+// // if (m.depth == 1 && m.maxLabelMap2[id] < m.q_maxDeg) {
+// // Can.set(id, false);
+// // }
+// }
+// // m.q_maxDeg = 0;
+
+// if (m.depth == sikiiti)
+// continue;
+// m.filtering_by_count();
+// }
+
+// }
+// void addDescendantsIDs() {
+// for (IndexNode m : children) {
+// m.descendantsMatchGraphIndicesBitSet.or(m.matchGraphIndicesBitSet);
+// m.getDescendantsMatchGraphIndicesBitSet(m);
+// m.addDescendantsIDs();
+// }
+
+// }
+
+// private void getDescendantsMatchGraphIndicesBitSet(IndexNode target) {
+// for (IndexNode m : children) {
+// target.descendantsMatchGraphIndicesBitSet.and(m.matchGraphIndicesBitSet);
+// // target.descendantsMatchGraphIndicesBitSet.or(m.matchGraphIndicesBitSet);
+// //
+// System.out.println(target.descendantsMatchGraphIndicesBitSet.cardinality());
+// m.getDescendantsMatchGraphIndicesBitSet(target);
+// }
+// }

@@ -11,7 +11,6 @@ import java.util.*;
 
 class Main {
     static Random rand;
-
     private static String sdfFilename = "aido99sd.sdf";
     private static String gfuFilename;
     private static String q_gfuFilename;
@@ -30,27 +29,32 @@ class Main {
         long max = Runtime.getRuntime().maxMemory();
 
         System.out.println("max: " + max / 1024 / 1024 / 1024);
-        String allindex = String.format("result/all_index.csv", dataset);
-        String wholeresult = String.format("result/all_result.csv", dataset);
-        Path writeindex = Paths.get(allindex);
-        Path writewhole = Paths.get(wholeresult);
-        try (BufferedWriter allfind = Files.newBufferedWriter(writeindex);
-                BufferedWriter br_whole = Files.newBufferedWriter(writewhole)) {
-            allfind.write(
-                    "dataset,depth,addPathtoTree(s),Tree_size,Tree_size(new),removeTime(s),addIDtoTree(s),Build_tree(s),memory cost\n");
 
-            for (datasetID = 0; datasetID <= 4; datasetID++) {
-                br_whole.write(
-                        "dataset,query_set,A/C,(G-C)/(G-A),SP,filtering_time(ms),verification_time(ms),query_time(ms),search_time(ms),node_fil_time(ms),|In(Q)|,|A(Q)|,|Can(Q)|,|F(Q)|,Num deleted Vertices,total deleted edges Num,nonfail,verify num,q_trav_num,1ms per filtering graph,ave_% of vertices were removed\n");
+        if (searchID == 1) {
+            String directoryPath = "result";
+            File directory = new File(directoryPath);
+            if (!directory.exists()) {
+                directory.mkdir();
+            }
 
-                if (datasetID < 0 || datasetID > 6) {
-                    System.out.println("無効なデータセットIDです");
-                    System.exit(0);
-                }
+            String allindex = "result/all_index.csv";
+            String wholeresult = "result/all_result.csv";
+            Path writeindex = Paths.get(allindex);
+            Path writewhole = Paths.get(wholeresult);
+            try (BufferedWriter allfind = Files.newBufferedWriter(writeindex);
+                    BufferedWriter br_whole = Files.newBufferedWriter(writewhole)) {
+                allfind.write(
+                        "dataset,depth,addPathtoTree(s),Tree_size,Tree_size(new),removeTime(s),addIDtoTree(s),Build_tree(s),memory cost\n");
 
-                parseArgs(args);
+                for (datasetID = 0; datasetID <= 6; datasetID++) {
+                    br_whole.write(
+                            "dataset,query_set,A/C,(G-C)/(G-A),SP,filtering_time(ms),verification_time(ms),query_time(ms),search_time(ms),node_fil_time(ms),|In(Q)|,|A(Q)|,|Can(Q)|,|F(Q)|,Num deleted Vertices,total deleted edges Num,nonfail,verify num,q_trav_num,1ms per filtering graph,ave_% of vertices were removed\n");
 
-                if (searchID == 1) {
+                    if (datasetID < 0 || datasetID > 6) {
+                        System.out.println("無効なデータセットIDです");
+                        System.exit(0);
+                    }
+                    parseArgs(args);
 
                     List<ArrayList<Pair<Integer, Graph>>> Q = new ArrayList<>();
                     final int querysize = 100;
@@ -60,7 +64,7 @@ class Main {
                     long start_read = System.nanoTime();
                     List<Graph> G = SdfFileReader.readFile_gfu(Paths.get(gfuFilename));
                     start_read = System.nanoTime() - start_read;
-                    System.out.println(dataset + " dataset load time:" + start_read / 1000 / 1000 / 1000 + "s");
+                    System.out.println(dataset + " dataset load time:" + start_read / 1000 / 1000 + "ms");
 
                     for (int numOfEdge = minedge; numOfEdge <= maxedge; numOfEdge *= 2) {
                         ArrayList<Pair<Integer, Graph>> qset = new ArrayList<>();
@@ -136,12 +140,7 @@ class Main {
                             int count2 = 0;
 
                             for (ArrayList<Pair<Integer, Graph>> Q_set : Q) {
-
                                 adjust[count++] = index;
-                                // if (dataset.equals("ppigo") && (index == 64)) {
-                                // index *= 2;
-                                // continue;
-                                // }
 
                                 if (index <= maxedge) {
                                     System.out.println("\nQ" + index + "R");
@@ -200,54 +199,56 @@ class Main {
                     } catch (IOException e) {
                         System.out.println(e);
                     }
+                }
+            } catch (IOException e) {
+                System.out.println(e);
+                System.exit(1);
+            }
 
-                } else if (searchID == 2) {
-                    // datasetID = 0;
-                    System.out.println("スーパーグラフ検索を開始します");
+        } else if (searchID == 2) {
+            // datasetID = 0;
+            parseArgs(args);
 
-                    List<Graph> G = SdfFileReader.readFile(Paths.get(sdfFilename));
+            System.out.println("スーパーグラフ検索を開始します");
 
-                    ArrayList<Pair<Integer, Graph>> Q = new ArrayList<>();
-                    for (int i = 0; i < G.size(); ++i) {
-                        Graph g = G.get(i);
+            List<Graph> G = SdfFileReader.readFile(Paths.get(sdfFilename));
 
-                        final int size = g.size();
+            ArrayList<Pair<Integer, Graph>> Q = new ArrayList<>();
+            for (int i = 0; i < G.size(); ++i) {
+                Graph g = G.get(i);
 
-                        if (34 <= size && size <= 36 && g.isConnected()) {
-                            Q.add(new Pair<Integer, Graph>(i, g));
-                        }
-                    }
+                final int size = g.size();
 
-                    System.out.println("G size: " + G.size());
-                    System.out.println("Q size: " + Q.size());
-
-                    long start = System.nanoTime();
-                    CodeTree tree = new CodeTree(graphCode, G, 100);// コード木構築
-                    System.out.println("Build tree: " + (System.nanoTime() - start) / 1000 / 1000
-                            + "msec");
-
-                    G = null;
-
-                    Path out = Paths.get("output_supergraph.txt");
-                    try (BufferedWriter bw = Files.newBufferedWriter(out)) {
-                        start = System.nanoTime();
-
-                        for (Pair<Integer, Graph> q : Q) {
-                            List<Integer> result = tree.supergraphSearch(q.right);
-                            bw.write(q.left.toString() + result.toString() + "\n");
-                        }
-
-                        final long time = System.nanoTime() - start;
-                        System.out.println((time) + " nano sec");
-                        System.out.println((time / 1000 / 1000) + " msec");
-                    } catch (IOException e) {
-                        System.exit(1);
-                    }
+                if (34 <= size && size <= 36 && g.isConnected()) {
+                    Q.add(new Pair<Integer, Graph>(i, g));
                 }
             }
-        } catch (IOException e) {
-            System.out.println(e);
-            System.exit(1);
+
+            System.out.println("G size: " + G.size());
+            System.out.println("Q size: " + Q.size());
+
+            long start = System.nanoTime();
+            CodeTree tree = new CodeTree(graphCode, G, 100);// コード木構築
+            System.out.println("Build tree: " + (System.nanoTime() - start) / 1000 / 1000
+                    + "msec");
+
+            G = null;
+
+            Path out = Paths.get("output_supergraph.txt");
+            try (BufferedWriter bw = Files.newBufferedWriter(out)) {
+                start = System.nanoTime();
+
+                for (Pair<Integer, Graph> q : Q) {
+                    List<Integer> result = tree.supergraphSearch(q.right);
+                    bw.write(q.left.toString() + result.toString() + "\n");
+                }
+
+                final long time = System.nanoTime() - start;
+                System.out.println((time) + " nano sec");
+                System.out.println((time / 1000 / 1000) + " msec");
+            } catch (IOException e) {
+                System.exit(1);
+            }
         }
 
     }
@@ -362,11 +363,11 @@ class Main {
             deg /= g.order;
             degree += deg;
         }
-        // System.out.println("Q_" + numOfEdge + mode + " |V| per q " + V / Q.size());
-        // System.out.println("Q_" + numOfEdge + mode + " |E| per q " + e / Q.size());
+        System.out.println("Q_" + numOfEdge + mode + " |V| per q " + V / Q.size());
+        System.out.println("Q_" + numOfEdge + mode + " |E| per q " + e / Q.size());
         System.out.println("Q_" + numOfEdge + mode + " d per q " + String.format("%.2f", degree / Q.size()));
-        // System.out.println("Q_" + numOfEdge + mode + " |Σ| per q " + sigma /
-        // Q.size());
+        System.out.println("Q_" + numOfEdge + mode + " |Σ| per q " + sigma /
+                Q.size());
         System.out.println();
     }
 
@@ -418,12 +419,12 @@ class Main {
             Q.add(new Pair<Integer, Graph>(count, q));
             count++;
         }
-        // System.out.println("Q_"+ numOfEdge + "S |V| per q " + V/querysize );
-        // System.out.println("Q_"+ numOfEdge +"S |E| per q " + e/querysize );
-        // System.out.println("Q_"+ numOfEdge +"S d per q " +
-        // String.format("%.2f",e*2/V));
-        // System.out.println("Q_"+ numOfEdge +"S |Σ| per q " + sigma/querysize );
-        // System.out.println();
+        System.out.println("Q_" + numOfEdge + "S |V| per q " + V / querysize);
+        System.out.println("Q_" + numOfEdge + "S |E| per q " + e / querysize);
+        System.out.println("Q_" + numOfEdge + "S d per q " +
+                String.format("%.2f", e * 2 / V));
+        System.out.println("Q_" + numOfEdge + "S |Σ| per q " + sigma / querysize);
+        System.out.println();
         return Q;
     }
 
@@ -453,12 +454,12 @@ class Main {
             Q.add(new Pair<Integer, Graph>(count, q));
             count++;
         }
-        // System.out.println("Q_"+ numOfEdge + "D |V| per q " + V/querysize );
-        // System.out.println("Q_" + numOfEdge + "D |E| per q " + e / querysize);
-        // System.out.println("Q_"+ numOfEdge +"D d per q " +
-        // String.format("%.2f",e*2/V));
-        // System.out.println("Q_"+ numOfEdge +"D |Σ| per q " + sigma/querysize );
-        // System.out.println();
+        System.out.println("Q_" + numOfEdge + "D |V| per q " + V / querysize);
+        System.out.println("Q_" + numOfEdge + "D |E| per q " + e / querysize);
+        System.out.println("Q_" + numOfEdge + "D d per q " +
+                String.format("%.2f", e * 2 / V));
+        System.out.println("Q_" + numOfEdge + "D |Σ| per q " + sigma / querysize);
+        System.out.println();
         return Q;
     }
 }

@@ -16,8 +16,6 @@ public class Graph implements Serializable {
     public BitSet filterFlag;
     public HashMap<Integer, BitSet> edgeBitset;
 
-    public HashMap<Integer, Set<IndexNode>> FVQ;
-
     static Random rand;
 
     public Graph(int id, byte[] vertices, byte[][] edges) {
@@ -28,12 +26,16 @@ public class Graph implements Serializable {
         this.size = this.size();
         filterFlag = new BitSet();
         edgeBitset = this.getEdgeBitset();
+    }
 
-        FVQ = new HashMap<>(order);
-        for (int v = 0; v < order; v++) {
-            FVQ.put(v, new HashSet<>());
-        }
-        // adjList = makeAdjList();
+    public Graph(int id, byte[] vertices, byte[][] edges, HashMap<Integer, BitSet> edgeBitset) {
+        this.id = id;
+        this.vertices = vertices;
+        this.edges = edges;
+        this.order = this.order();
+        this.size = this.size();
+        this.edgeBitset = edgeBitset;
+        filterFlag = new BitSet();
     }
 
     private HashMap<Integer, BitSet> getEdgeBitset(int[][] adjList) {
@@ -539,6 +541,7 @@ public class Graph implements Serializable {
         return null;
     }
 
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     public static Graph createQueryByBFS(Graph graph, int size) {
 
         Queue<Integer> queue = new ArrayDeque<>();

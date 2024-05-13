@@ -4,6 +4,7 @@ import java.util.*;
 
 import java.io.Serializable;
 
+import codetree.common.VertexLabel;
 import codetree.core.*;
 
 class AcgmCodeFragment
@@ -96,22 +97,6 @@ class AcgmCodeFragment
 
     }
 
-    @Override
-    public boolean contains_adj(CodeFragment other0) {
-        AcgmCodeFragment other = (AcgmCodeFragment) other0;
-        // final int len = eLabels.length;
-        // if (len != other.eLabels.length) {
-        // throw new IllegalArgumentException("Compareing incompatible fragments.");
-        // }
-
-        if (vLabel != other.vLabel) {
-            return false;
-        }
-
-        return true;
-
-    }
-
     // @Override
     // public boolean contains1(CodeFragment other0) {
     // AcgmCodeFragment other = (AcgmCodeFragment) other0;
@@ -134,16 +119,14 @@ class AcgmCodeFragment
     // return true;
     // }
 
-    // @Override
-    // public String toString()
-    // {
-    // String s = VertexLabel.id2string(vLabel);
-    // for (int i = 0; i < eLabels.length; ++i) {
-    // s += String.valueOf(eLabels[i]);
-    // }
-
-    // return s;
-    // }
+    @Override
+    public String toString() {
+        String s = VertexLabel.id2string(vLabel);
+        for (int i = 0; i < eLabels.length; ++i) {
+            s += String.valueOf(eLabels[i]);
+        }
+        return s;
+    }
 
     @Override
     public byte getVlabel() {
