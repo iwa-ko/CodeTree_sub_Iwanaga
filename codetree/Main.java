@@ -118,6 +118,12 @@ class Main {
                             System.out.println("tree");
                             CodeTree tree = new CodeTree(graphCode, G, bw, dataset, allfind);
 
+                            directoryPath = "data_structure";
+                            directory = new File(directoryPath);
+                            if (!directory.exists()) {
+                                directory.mkdir();
+                            }
+
                             String codetree = String.format("data_structure/%s.ser",
                                     dataset);
                             File file = new File(codetree);
@@ -127,8 +133,8 @@ class Main {
                             allfind.write(String.format("%.2f", (double) fileSize / 1024 / 1024) + "\n");
 
                             allfind.flush();
-                            // if (true)
-                            // continue;
+                            if (true)
+                                continue;
 
                             HashMap<Integer, ArrayList<String>> gMaps = makeGmaps(gfuFilename);
 
@@ -234,18 +240,22 @@ class Main {
 
             G = null;
 
+            int answer_num = 0;
+
             Path out = Paths.get("output_supergraph.txt");
             try (BufferedWriter bw = Files.newBufferedWriter(out)) {
                 start = System.nanoTime();
 
                 for (Pair<Integer, Graph> q : Q) {
                     List<Integer> result = tree.supergraphSearch(q.right);
+                    answer_num += result.size();
                     bw.write(q.left.toString() + result.toString() + "\n");
                 }
 
                 final long time = System.nanoTime() - start;
                 System.out.println((time) + " nano sec");
                 System.out.println((time / 1000 / 1000) + " msec");
+                System.out.println("answer : " + answer_num);
             } catch (IOException e) {
                 System.exit(1);
             }

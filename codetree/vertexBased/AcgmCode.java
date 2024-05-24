@@ -164,36 +164,6 @@ public class AcgmCode
         return frags;
     }
 
-    @Override // subgraph search
-    public List<Pair<CodeFragment, SearchInfo>> enumerateFollowableFragments(Graph g, SearchInfo info0,
-            HashSet<Byte> childrenVlabel) {
-        ArrayList<Pair<CodeFragment, SearchInfo>> frags = new ArrayList<>();
-
-        AcgmSearchInfo info = (AcgmSearchInfo) info0;
-
-        final int depth = info.vertexIDs.length;
-
-        byte[] eLabels = new byte[depth];
-
-        for (int v = info.open.nextSetBit(0); v != -1; v = info.open
-                .nextSetBit(++v)) {
-
-            if (!childrenVlabel.contains(g.vertices[v])) {
-                continue;
-            }
-
-            for (int i = 0; i < depth; ++i) {
-                final int u = info.vertexIDs[i];
-                eLabels[i] = g.edges[u][v];// 辺ラベル決定
-            }
-
-            frags.add(new Pair<CodeFragment, SearchInfo>(
-                    new AcgmCodeFragment(g.vertices[v], eLabels), new AcgmSearchInfo(info, g, v)));
-        }
-
-        return frags;
-    }
-
     BitSet openBitSet = new BitSet();
 
     @Override
@@ -213,14 +183,15 @@ public class AcgmCode
             openBitSet.or(g.edgeBitset.get(u));
         }
 
+        for (int i : info.vertexIDs) {
+            openBitSet.set(i, false);
+        }
+
         for (int v = openBitSet.nextSetBit(0); v != -1; v = openBitSet.nextSetBit(++v)) {
 
             if (!childrenVlabel.contains(g.vertices[v])) {
                 continue;
             }
-
-            if (contain(info.vertexIDs, v))
-                continue;
 
             for (int i = 0; i < depth; ++i) {
                 final int u = info.vertexIDs[i];
@@ -234,14 +205,14 @@ public class AcgmCode
         return frags;
     }
 
-    boolean contain(int[] vertexIDs, int num) {
-        for (int i : vertexIDs) {
-            if (i == num) {
-                return true;
-            }
-        }
-        return false;
-    }
+    // boolean contain(int[] vertexIDs, int num) {
+    // for (int i : vertexIDs) {
+    // if (i == num) {
+    // return true;
+    // }
+    // }
+    // return false;
+    // }
 
     @Override
     public List<CodeFragment> computeCode(Graph g, int start, int limDepth) {
@@ -306,3 +277,35 @@ public class AcgmCode
     }
 
 }
+
+// @Override // subgraph search
+// public List<Pair<CodeFragment, SearchInfo>>
+// enumerateFollowableFragments(Graph g, SearchInfo info0,
+// HashSet<Byte> childrenVlabel) {
+// ArrayList<Pair<CodeFragment, SearchInfo>> frags = new ArrayList<>();
+
+// AcgmSearchInfo info = (AcgmSearchInfo) info0;
+
+// final int depth = info.vertexIDs.length;
+
+// byte[] eLabels = new byte[depth];
+
+// for (int v = info.open.nextSetBit(0); v != -1; v = info.open
+// .nextSetBit(++v)) {
+
+// if (!childrenVlabel.contains(g.vertices[v])) {
+// continue;
+// }
+
+// for (int i = 0; i < depth; ++i) {
+// final int u = info.vertexIDs[i];
+// eLabels[i] = g.edges[u][v];// 辺ラベル決定
+// }
+
+// frags.add(new Pair<CodeFragment, SearchInfo>(
+// new AcgmCodeFragment(g.vertices[v], eLabels), new AcgmSearchInfo(info, g,
+// v)));
+// }
+
+// return frags;
+// }

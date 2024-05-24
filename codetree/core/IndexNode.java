@@ -443,7 +443,15 @@ public class IndexNode implements Serializable {
             U.or(root.matchGraphIndicesBitSet);
         }
 
-        List<Pair<CodeFragment, SearchInfo>> nextFrags = impl.enumerateFollowableFragments(q, info, adjLabels);
+        List<Pair<CodeFragment, SearchInfo>> nextFrags;
+        if (childEdgeFragAnd.cardinality() > 0) {
+            nextFrags = impl.enumerateFollowableFragments(q, info, adjLabels, childEdgeFragAnd);
+        } else {
+            nextFrags = impl.enumerateFollowableFragments(q, info, adjLabels, childEdgeFragOr);
+        }
+
+        // List<Pair<CodeFragment, SearchInfo>> nextFrags =
+        // impl.enumerateFollowableFragments(q, info, adjLabels);
 
         for (IndexNode m : children) {
             for (Pair<CodeFragment, SearchInfo> frag : nextFrags) {
@@ -480,7 +488,15 @@ public class IndexNode implements Serializable {
             return;
         }
 
-        List<Pair<CodeFragment, SearchInfo>> nextFrags = impl.enumerateFollowableFragments(q, info, adjLabels);
+        List<Pair<CodeFragment, SearchInfo>> nextFrags;
+        if (childEdgeFragAnd.cardinality() > 0) {
+            nextFrags = impl.enumerateFollowableFragments(q, info, adjLabels, childEdgeFragAnd);
+        } else {
+            nextFrags = impl.enumerateFollowableFragments(q, info, adjLabels, childEdgeFragOr);
+        }
+
+        // List<Pair<CodeFragment, SearchInfo>> nextFrags =
+        // impl.enumerateFollowableFragments(q, info, adjLabels);
 
         for (IndexNode m : children) {
             if (!m.traverseNecessity)
@@ -533,7 +549,7 @@ public class IndexNode implements Serializable {
     }
 
     private void addIDtoTree(Graph g, SearchInfo info, GraphCode impl) {
-        traverse_cou++;
+        // traverse_cou++;
         if (depth == 1) {
             if (labelFiltering.get(g.id) == null) {
                 labelFiltering.put(g.id, new BitSet(g.order));
@@ -1068,8 +1084,16 @@ public class IndexNode implements Serializable {
 
         // List<Pair<CodeFragment, SearchInfo>> nextFrags =
         // impl.enumerateFollowableFragments(q, info, thisAdjLavels);
-        List<Pair<CodeFragment, SearchInfo>> nextFrags = impl.enumerateFollowableFragments(q, info, adjLabels,
-                childEdgeFragOr);
+        List<Pair<CodeFragment, SearchInfo>> nextFrags;
+        if (childEdgeFragAnd.cardinality() > 0) {
+            nextFrags = impl.enumerateFollowableFragments(q, info, adjLabels, childEdgeFragAnd);
+        } else {
+            nextFrags = impl.enumerateFollowableFragments(q, info, adjLabels, childEdgeFragOr);
+        }
+
+        // List<Pair<CodeFragment, SearchInfo>> nextFrags =
+        // impl.enumerateFollowableFragments(q, info, adjLabels,
+        // childEdgeFragOr);
 
         for (IndexNode m : children) {
             if (m.count > 0 && m.supNode) {

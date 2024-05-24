@@ -15,8 +15,9 @@ public interface GraphCode {
 
         abstract List<Pair<CodeFragment, SearchInfo>> enumerateFollowableFragments(Graph g, SearchInfo info);
 
-        abstract List<Pair<CodeFragment, SearchInfo>> enumerateFollowableFragments(Graph g, SearchInfo info,
-                        HashSet<Byte> childrenVlabel);
+        // abstract List<Pair<CodeFragment, SearchInfo>>
+        // enumerateFollowableFragments(Graph g, SearchInfo info,
+        // HashSet<Byte> childrenVlabel);
 
         abstract List<ArrayList<CodeFragment>> computeCanonicalCode(int labels_length);
 

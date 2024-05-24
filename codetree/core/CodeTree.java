@@ -57,8 +57,8 @@ public class CodeTree implements Serializable {
 
             case "ppigo":
                 delta = 5;
-                delta = 4;
-                loop = 100;
+                // delta = 4;
+                // loop = 100;
                 break;
         }
 
@@ -98,7 +98,7 @@ public class CodeTree implements Serializable {
         }
         codelist = null;
 
-        root.sortChildren();
+        // root.sortChildren();
 
         index.write(dataset + "," + delta + ","
                 + String.format("%.6f", (double) (System.nanoTime() - start) / 1000 / 1000 / 1000) + ",");
