@@ -203,6 +203,31 @@ public class IndexNode implements Serializable {
         }
     }
 
+    // 頻出ラベルを子の左側に
+    void sortVlabelChildren() {
+        @SuppressWarnings("unchecked")
+        Pair<Byte, IndexNode>[] pairs = new Pair[children.size()];
+        // System.out.println("\nWW");
+
+        for (int i = 0; i < pairs.length; i++) {
+            pairs[i] = new Pair<Byte, IndexNode>(children.get(i).frag.getVlabel(),
+                    children.get(i));
+            // System.out.print(children.get(i).frag.getVlabel() + " ");
+        }
+        Arrays.sort(pairs, Comparator.comparingInt(p -> p.left));
+        children.clear();
+        // System.out.println();
+
+        for (int i = 0; i < pairs.length; i++) {
+            children.add(pairs[i].right);
+            // System.out.print(children.get(i).frag.getVlabel() + " ");
+        }
+
+        for (IndexNode m : children) {
+            m.sortVlabelChildren();
+        }
+    }
+
     // sort check
     void printCanSize() {
         System.out.println("this");
@@ -931,6 +956,7 @@ public class IndexNode implements Serializable {
         verify_time = 0;
         veq_per_Can = 0;
         a_deletedVsumPerq = 0;
+        a_fil_count = 0;
     }
 
     private void write_file(BufferedWriter allbw, BufferedWriter bw, int size, BufferedWriter br_whole) {

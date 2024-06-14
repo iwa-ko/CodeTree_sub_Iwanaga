@@ -29,6 +29,10 @@ public class CodeTree implements Serializable {
         long start = System.nanoTime();
 
         switch (dataset) {
+            case "NCI":
+                delta = 5;
+                break;
+
             case "AIDS":
                 delta = 5;
                 break;
@@ -50,9 +54,9 @@ public class CodeTree implements Serializable {
                 break;
 
             case "pcms":
-                // delta = 10;
-                delta = 5;
-                loop = 10;
+                delta = 10;
+                // delta = 5;
+                // loop = 10;
                 break;
 
             case "ppigo":
@@ -98,7 +102,7 @@ public class CodeTree implements Serializable {
         }
         codelist = null;
 
-        // root.sortChildren();
+        root.sortVlabelChildren();
 
         index.write(dataset + "," + delta + ","
                 + String.format("%.6f", (double) (System.nanoTime() - start) / 1000 / 1000 / 1000) + ",");

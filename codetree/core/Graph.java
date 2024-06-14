@@ -133,7 +133,9 @@ public class Graph implements Serializable {
         double d = 0;
         int n = this.order();
         for (int i = 0; i < n; i++) {
-            d += adjList[i].length;
+            // d += adjList[i].length;
+            d += edgeBitset.get(i).cardinality();
+
         }
         return d / (double) n;
     }
@@ -494,7 +496,9 @@ public class Graph implements Serializable {
 
         while (!open.isEmpty()) {
             int v = open.pop();
-            for (int u : adjList[v]) {// 隣接頂点を得る
+            for (int u = edgeBitset.get(v).nextSetBit(0); u != -1; u = edgeBitset.get(v)
+                    .nextSetBit(++u)) {
+                // for (int u : adjList[v]) {// 隣接頂点を得る
                 if (!check_path[v][u]) {
                     adj.add(u);// 頂点ｖの隣接リスト
                 }
@@ -559,7 +563,8 @@ public class Graph implements Serializable {
             if (!visit.contains(v)) {
                 visit.add(v);
 
-                for (int u : graph.adjList[v]) {
+                for (int u = graph.edgeBitset.get(v).nextSetBit(0); u != -1; u = graph.edgeBitset.get(v)
+                        .nextSetBit(++u)) {
                     queue.add(u);
                     if (visit.contains(u)) {
                         if (u < v)
