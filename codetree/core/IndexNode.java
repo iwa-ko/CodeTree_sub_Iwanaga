@@ -341,7 +341,6 @@ public class IndexNode implements Serializable {
 
             start = System.nanoTime();
             find_labelFiltering(G, traversedNode);
-
             a_nodeFiltering_time = System.nanoTime() - start;
 
             getlabelFiltering_num(G);
@@ -397,29 +396,18 @@ public class IndexNode implements Serializable {
     }
 
     void find_labelFiltering(List<Graph> G, List<IndexNode> trIndexNodes) {
+        BitSet target = new BitSet();
         for (IndexNode m : trIndexNodes) {
-            int mapsize = m.labelFiltering.size();
-            int cansize = Can.cardinality();
-            if (cansize <= mapsize) {
-                for (int trueIndex = Can.nextSetBit(0); trueIndex != -1; trueIndex = Can
-                        .nextSetBit(++trueIndex)) {
-                    BitSet labelFrag = m.labelFiltering.get(trueIndex);
-                    if (labelFrag != null) {
-                        G.get(trueIndex).filterFlag.or(labelFrag);
-                        deletedVsumPerq += labelFrag.cardinality();
-                        query_per_nf_count += labelFrag.cardinality();
-                    }
-                }
-            } else {
-                for (int trueIndex : m.labelFiltering.keySet()) {
-                    if (Can.get(trueIndex)) {
-                        BitSet labelFrag = m.labelFiltering.get(trueIndex);
-                        G.get(trueIndex).filterFlag.or(labelFrag);
-                        deletedVsumPerq += labelFrag.cardinality();
-                        query_per_nf_count += labelFrag.cardinality();
-                    }
-                }
+            target.or(Can);
+            target.and(m.matchGraphIndicesBitSet);
+            for (int trueIndex = target.nextSetBit(0); trueIndex != -1; trueIndex = target
+                    .nextSetBit(++trueIndex)) {
+                BitSet labelFrag = m.labelFiltering.get(trueIndex);
+                G.get(trueIndex).filterFlag.or(m.labelFiltering.get(trueIndex));
+                deletedVsumPerq += labelFrag.cardinality();
+                query_per_nf_count += labelFrag.cardinality();
             }
+            target.clear();
         }
     }
 

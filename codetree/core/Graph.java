@@ -628,6 +628,47 @@ public class Graph implements Serializable {
 
     }
 
+    public Graph shirinkNEC() {
+
+        int order = 0;
+        int[] map = new int[order()];
+        ArrayList<Integer> remove = new ArrayList<>();
+
+        for (int v = 0; v < this.order; ++v) {
+            if (this.adjList[v].length > 1 || remove.contains(v))
+                continue;
+
+            if (this.adjList[v].length == 0) {
+                remove.add(v);
+                continue;
+            }
+            int adj = this.adjList[v][0];
+
+            for (int u : this.adjList[adj]) {
+                if (this.adjList[u].length > 1 || u == v || vertices[u] != vertices[v])
+                    continue;
+                remove.add(u);
+            }
+        }
+
+        for (int v = 0; v < this.order; v++) {
+            if (!remove.contains(v)) {
+                map[order++] = v;
+            }
+        }
+        byte[] vertices = new byte[order];
+        byte[][] edges = new byte[order][order];
+
+        for (int v = 0; v < order; ++v) {
+            vertices[v] = this.vertices[map[v]];
+
+            for (int u = 0; u < order; ++u) {
+                edges[v][u] = this.edges[map[v]][map[u]];
+            }
+        }
+        return new Graph(id, vertices, edges);
+    }
+
 }
 
 // private Map<Byte, List<Integer>> makeVlabelMap() {
@@ -640,45 +681,4 @@ public class Graph implements Serializable {
 // }
 
 // return vertexMap;
-// }
-
-// public Graph shirinkNEC() {
-
-// int order = 0;
-// int[] map = new int[order()];
-// ArrayList<Integer> remove = new ArrayList<>();
-
-// for (int v = 0; v < this.order; ++v) {
-// if (this.adjList[v].length > 1 || remove.contains(v))
-// continue;
-
-// if (this.adjList[v].length == 0) {
-// remove.add(v);
-// continue;
-// }
-// int adj = this.adjList[v][0];
-
-// for (int u : this.adjList[adj]) {
-// if (this.adjList[u].length > 1 || u == v || vertices[u] != vertices[v])
-// continue;
-// remove.add(u);
-// }
-// }
-
-// for (int v = 0; v < this.order; v++) {
-// if (!remove.contains(v)) {
-// map[order++] = v;
-// }
-// }
-// byte[] vertices = new byte[order];
-// byte[][] edges = new byte[order][order];
-
-// for (int v = 0; v < order; ++v) {
-// vertices[v] = this.vertices[map[v]];
-
-// for (int u = 0; u < order; ++u) {
-// edges[v][u] = this.edges[map[v]][map[u]];
-// }
-// }
-// return new Graph(id, vertices, edges);
 // }
