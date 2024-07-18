@@ -119,14 +119,14 @@ public class AcgmCode
         return code;
     }
 
-    @Override // 最初の探索候補となる頂点を全出力
+    @Override
     public List<Pair<IndexNode, SearchInfo>> beginSearch(Graph g, IndexNode root) {
         ArrayList<Pair<IndexNode, SearchInfo>> infoList = new ArrayList<>();
 
         for (IndexNode m : root.children) {
             for (int v = 0; v < g.order; ++v) {
                 AcgmCodeFragment frag = (AcgmCodeFragment) m.frag;
-                if (g.vertices[v] == frag.vLabel) {// 頂点だけ注目すれば良い
+                if (g.vertices[v] == frag.vLabel) {
                     infoList.add(new Pair<IndexNode, SearchInfo>(m, new AcgmSearchInfo(g, v)));
                 }
             }

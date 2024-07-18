@@ -145,6 +145,7 @@ public class CodeTree implements Serializable {
         time = System.nanoTime();
         System.out.println("グラフIDの計算中");
         root.addInfo();
+        // root.sortVlabelRootChildren();
         inclusionCheck(impl, G);
         bw.write("addIDtoTree(s): " + String.format("%.3f", (double) (System.nanoTime() - time) / 1000 / 1000 / 1000)
                 + "\n");

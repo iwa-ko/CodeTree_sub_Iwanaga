@@ -228,6 +228,24 @@ public class IndexNode implements Serializable {
         }
     }
 
+    // 頻出ラベルを子の左側に
+    void sortVlabelRootChildren() {
+        @SuppressWarnings("unchecked")
+        Pair<Byte, IndexNode>[] pairs = new Pair[children.size()];
+
+        for (int i = 0; i < pairs.length; i++) {
+            pairs[i] = new Pair<Byte, IndexNode>(children.get(i).frag.getVlabel(),
+                    children.get(i));
+        }
+        Arrays.sort(pairs, Comparator.comparingInt(p -> p.left));
+        children.clear();
+
+        for (int i = 0; i < pairs.length; i++) {
+            children.add(pairs[i].right);
+            System.out.print(children.get(i).frag.getVlabel() + " ");
+        }
+    }
+
     // sort check
     void printCanSize() {
         System.out.println("this");
@@ -553,9 +571,15 @@ public class IndexNode implements Serializable {
         initTraverseNecessity.clear();
     }
 
+    // static long test;
+
+    // static long tt = 0;
+
     void addIDtoTree(Graph g, GraphCode impl) {
         matchGraphIndicesBitSet.set(g.id, true);
+        // long t = System.nanoTime();
         List<Pair<IndexNode, SearchInfo>> infoList = impl.beginSearch(g, this);
+        // tt += System.nanoTime() - t;
         for (Pair<IndexNode, SearchInfo> info : infoList) {
             info.left.addIDtoTree(g, info.right, impl);
         }
@@ -690,7 +714,6 @@ public class IndexNode implements Serializable {
 
     private void pruningEquivalentNodes(Graph g, SearchInfo info, GraphCode impl, int leafID, ArrayList<Integer> idList,
             ArrayList<Integer> removeIDList) {
-
         //// this node is leaf and & not needed by index because of same path
         if (children.size() == 0 && depth != 1 && leafID != this.nodeID && !removeNode.contains(this)
                 && !idList.contains(this.nodeID)) {
