@@ -11,9 +11,16 @@ output2.txt
 *.json
 *.ser
 *.csv
-*.gfu
-*.sdf
+# *.gfu
+# *.sdf
 
-Query/*
+AIDS/*
+COLLAB/*
+IMDB-MULTI/*
+pcms/*
+ppigo/*
+REDDIT-MULTI-5K/*
+# Query/*
 Query2/*
 Query_nolabel/*
+Query_labelchange/*
