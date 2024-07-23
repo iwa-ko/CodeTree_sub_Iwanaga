@@ -9,12 +9,15 @@ import codetree.common.*;
 public class Graph implements Serializable {
     public final int id;
     public final byte[] vertices;
+    public int[] vector;
     public byte[][] edges;
     public int[][] adjList;
     public int size;
     public int order;
     public BitSet filterFlag;
     public HashMap<Integer, BitSet> edgeBitset;
+    public BitSet startvertexBit;
+    public HashMap<Integer, BitSet> equivalenceclass;
 
     static Random rand;
 
@@ -36,6 +39,9 @@ public class Graph implements Serializable {
         this.size = this.size();
         this.edgeBitset = edgeBitset;
         filterFlag = new BitSet();
+        equivalenceclass = this.checkEquivalence();
+        startvertexBit = this.startVertexcheck();
+        vector = this.addvector();
     }
 
     private HashMap<Integer, BitSet> getEdgeBitset(int[][] adjList) {
@@ -667,6 +673,108 @@ public class Graph implements Serializable {
             }
         }
         return new Graph(id, vertices, edges);
+    }
+
+    private HashMap<Integer, BitSet> checkEquivalence() {
+
+        HashMap<Integer, BitSet> equivalenceclass = new HashMap<>();
+        boolean[] b = new boolean[order];
+        // int c = 0;
+        // convertBoolean... についてはindexnode.javaのaddidtotreeのアルゴリズム参照
+        for (int i = 0; i < this.order; i++) {
+            if (b[i])
+                continue;
+            boolean[] a = new boolean[order];
+            a[i] = true;
+            for (int j = i + 1; j < this.order; j++) {
+                if (vertices[i] == vertices[j]) {
+                    edgeBitset.get(i).set(j, false);
+                    edgeBitset.get(j).set(i, false);
+                    if (edgeBitset.get(i).equals(edgeBitset.get(j))) {
+                        a[j] = true;
+                    }
+                    if (edges[i][j] == 1) {
+                        edgeBitset.get(i).set(j, true);
+                        edgeBitset.get(j).set(i, true);
+                    }
+                }
+            }
+
+            BitSet bitSet = convertBooleanArrayToBitSet(a);
+            equivalenceclass.put(i, bitSet);
+
+            for (int s = 0; s < order; s++) {
+                if (!b[s])
+                    b[s] = a[s];
+            }
+
+        }
+
+        return equivalenceclass;
+    }
+
+    
+    private BitSet startVertexcheck() {
+        BitSet startVertexBit = new BitSet(order);
+
+        for (Integer a : this.equivalenceclass.keySet()) {
+            startVertexBit.set(a);
+        }
+
+        return startVertexBit;
+    }
+
+    public BitSet changestartVerBitSet(int v) {
+        int a = vector[v];
+        if (a != 0 && a != -1) {
+            startvertexBit.set(v, false);
+            startvertexBit.set(a, true);
+        }
+        return startvertexBit;
+    }
+    public BitSet backstartVerBitSet(int v) {
+        int a = vector[v];
+        if (a != 0 && a != -1) {
+            startvertexBit.set(v, true);
+            startvertexBit.set(a, false);
+        }
+        return startvertexBit;
+    }
+
+    private int[] addvector() {
+        int[] vector = new int[order];
+        int memoindex = -1;
+        // ArrayList<Integer> startID = new ArrayList<>();//矢印の開始の頂点ID保持
+
+        for (BitSet equivalenceBit : equivalenceclass.values()) {
+            int count = 0;
+            memoindex = equivalenceBit.nextSetBit(0);
+            int max = equivalenceBit.cardinality();
+            // startID.add(memoindex);
+            for (int trueIndex = equivalenceBit.nextSetBit(1+memoindex); trueIndex != -1; trueIndex = equivalenceBit
+                    .nextSetBit(++trueIndex)) {
+
+                vector[memoindex] = trueIndex;
+
+                memoindex = trueIndex;
+                count++;
+                if (count == max - 1) {// 改善可能性
+                    vector[trueIndex] = -1;
+                }
+            }
+        }
+
+        return vector;
+    }
+
+    public static BitSet convertBooleanArrayToBitSet(boolean[] boolArray) {
+        BitSet bitSet = new BitSet(boolArray.length);
+        for (int i = 0; i < boolArray.length; i++) {
+            if (boolArray[i]) {
+                bitSet.set(i);
+            }
+        }
+        return bitSet;
     }
 
 }

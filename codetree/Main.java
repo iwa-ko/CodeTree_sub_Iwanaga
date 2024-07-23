@@ -46,7 +46,7 @@ class Main {
                 allfind.write(
                         "dataset,depth,addPathtoTree(s),Tree_size,Tree_size(new),removeTime(s),addIDtoTree(s),Build_tree(s),memory cost\n");
 
-                for (datasetID = 0; datasetID <= 5; datasetID++) {
+                for (datasetID = 0; datasetID <= 0; datasetID++) {
                     br_whole.write(
                             "dataset,query_set,A/C,(G-C)/(G-A),SP,filtering_time(ms),verification_time(ms),query_time(ms),search_time(ms),node_fil_time(ms),|In(Q)|,|A(Q)|,|Can(Q)|,|F(Q)|,Num deleted Vertices,total deleted edges Num,nonfail,verify num,q_trav_num,1ms per filtering graph,ave_% of vertices were removed\n");
 
@@ -65,6 +65,21 @@ class Main {
                     List<Graph> G = SdfFileReader.readFile_gfu(Paths.get(gfuFilename));
                     start_read = System.nanoTime() - start_read;
                     System.out.println(dataset + " dataset load time:" + start_read / 1000 / 1000 + "ms");
+
+                    double total = 0;
+
+                    for(Graph g : G){
+                        int count= 0;
+                        for(int i=0; i< g.order();i++){
+                            if(g.equivalenceclass.containsKey(i)){
+                                if(g.equivalenceclass.get(i).cardinality() > 1){
+                                    count++;
+                                }
+                            }
+                        }
+                        total += count;
+                    }
+                    System.out.println("equivalence:" + total/G.size());
 
                     for (int numOfEdge = minedge; numOfEdge <= maxedge; numOfEdge *= 2) {
                         ArrayList<Pair<Integer, Graph>> qset = new ArrayList<>();
@@ -133,8 +148,8 @@ class Main {
                             allfind.write(String.format("%.2f", (double) fileSize / 1024 / 1024) + "\n");
 
                             allfind.flush();
-                            if (true)
-                                continue;
+                            // if (true)
+                            // continue;
 
                             HashMap<Integer, ArrayList<String>> gMaps = makeGmaps(gfuFilename);
 

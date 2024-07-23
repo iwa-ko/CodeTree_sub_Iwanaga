@@ -118,6 +118,25 @@ public class AcgmCode
         }
         return code;
     }
+    @Override // 最初の探索候補となる頂点を全出力
+    public List<Pair<IndexNode, SearchInfo>> beginSearchforsearch(Graph g, IndexNode root) {
+        ArrayList<Pair<IndexNode, SearchInfo>> infoList = new ArrayList<>();
+        // int count = 0;
+        for (IndexNode m : root.children) {
+            for (int v = 0; v < g.order; ++v) {// keyに割り当てられている頂点だけを確認するように変更
+                AcgmCodeFragment frag = (AcgmCodeFragment) m.frag;
+                if (g.vertices[v] == frag.vLabel && g.startvertexBit.get(v)) {// 頂点だけ注目すれば良い
+                    // g.changestartVerBitSet(v);
+                    // infoList.add(new Pair<IndexNode, SearchInfo>(m, new AcgmSearchInfo(g, v)));
+                    infoList.add(new Pair<IndexNode, SearchInfo>(m, new AcgmSearchInfo(g, v)));
+                    // count++;
+                    // g.backstartVerBitSet(v);
+                }
+            }
+        }
+        // System.out.println(count);
+        return infoList;
+    }
 
     @Override
     public List<Pair<IndexNode, SearchInfo>> beginSearch(Graph g, IndexNode root) {
@@ -188,6 +207,9 @@ public class AcgmCode
         }
 
         for (int v = openBitSet.nextSetBit(0); v != -1; v = openBitSet.nextSetBit(++v)) {
+            if(!g.startvertexBit.get(v)){
+                continue;
+            }
 
             if (!childrenVlabel.contains(g.vertices[v])) {
                 continue;

@@ -12,6 +12,7 @@ public interface GraphCode {
         abstract List<CodeFragment> computeCode(Graph g, int start, int limDepth);
 
         abstract List<Pair<IndexNode, SearchInfo>> beginSearch(Graph g, IndexNode root);
+        abstract List<Pair<IndexNode, SearchInfo>> beginSearchforsearch(Graph g, IndexNode root);
 
         abstract List<Pair<CodeFragment, SearchInfo>> enumerateFollowableFragments(Graph g, SearchInfo info);
 

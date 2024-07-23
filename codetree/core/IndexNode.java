@@ -327,11 +327,13 @@ public class IndexNode implements Serializable {
         Can.or(matchGraphIndicesBitSet);// Can ← G
         List<IndexNode> traversedNode = new ArrayList<>(this.children);
 
-        List<Pair<IndexNode, SearchInfo>> infoList = impl.beginSearch(q, this);
+        List<Pair<IndexNode, SearchInfo>> infoList = impl.beginSearchforsearch(q, this);
         if (delta >= q.order) {
             traverse = true;
             for (Pair<IndexNode, SearchInfo> info : infoList) {
+                q.changestartVerBitSet(info.right.getVertexIDs()[0]);
                 info.left.doublesearch(q, info.right, impl, false, traversedNode);
+                q.backstartVerBitSet(info.right.getVertexIDs()[0]);
                 if (!traverse)
                     break;
             }
@@ -487,12 +489,16 @@ public class IndexNode implements Serializable {
         for (IndexNode m : children) {
             for (Pair<CodeFragment, SearchInfo> frag : nextFrags) {
                 if (m.frag.equals(frag.left)) {// super pattern
+                    q.changestartVerBitSet(frag.right.getVertexIDs()[depth]);
                     m.doublesearch(q, frag.right, impl, superFrag, traversedNode);
+                    q.backstartVerBitSet(frag.right.getVertexIDs()[depth]);
                     if (!traverse)
                         return;
                 } else if (m.frag.bigger(frag.left)) {// super pattern p
                     superFrag = true;
+                    q.changestartVerBitSet(frag.right.getVertexIDs()[depth]);
                     m.doublesearch(q, frag.right, impl, superFrag, traversedNode);
+                    q.backstartVerBitSet(frag.right.getVertexIDs()[depth]);
                     if (!traverse)
                         return;
                 }
@@ -536,7 +542,9 @@ public class IndexNode implements Serializable {
                 if (!m.traverseNecessity)
                     break;
                 if (frag.left.equals(m.frag)) {
+                    q.changestartVerBitSet(frag.right.getVertexIDs()[depth]);
                     m.subsearch(q, frag.right, impl, traversedNode);
+                    q.backstartVerBitSet(frag.right.getVertexIDs()[depth]);
                 }
             }
         }
@@ -578,7 +586,7 @@ public class IndexNode implements Serializable {
     void addIDtoTree(Graph g, GraphCode impl) {
         matchGraphIndicesBitSet.set(g.id, true);
         // long t = System.nanoTime();
-        List<Pair<IndexNode, SearchInfo>> infoList = impl.beginSearch(g, this);
+        List<Pair<IndexNode, SearchInfo>> infoList = impl.beginSearchforsearch(g, this);
         // tt += System.nanoTime() - t;
         for (Pair<IndexNode, SearchInfo> info : infoList) {
             info.left.addIDtoTree(g, info.right, impl);
@@ -616,7 +624,9 @@ public class IndexNode implements Serializable {
                 if (!m.traverseNecessity)
                     break;
                 if (frag.left.contains(m.frag)) {
+                    g.changestartVerBitSet(frag.right.getVertexIDs()[depth]);
                     m.addIDtoTree(g, frag.right, impl);
+                    g.backstartVerBitSet(frag.right.getVertexIDs()[depth]);
                 }
             }
         }
