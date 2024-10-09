@@ -10,6 +10,8 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.util.*;
 
+import codetree.common.VertexLabel;
+
 public class CodeTree implements Serializable {
     GraphCode impl;
     public IndexNode root;
@@ -55,6 +57,7 @@ public class CodeTree implements Serializable {
 
             case "pcms":
                 delta = 10;
+                // 10
                 // delta = 5;
                 // loop = 10;
                 break;
@@ -67,33 +70,110 @@ public class CodeTree implements Serializable {
         }
 
         // Path p = Paths.get("patten.gfu");
-        // try (BufferedWriter p_bw = Files.newBufferedWriter(p)) {
-        // for (Graph g : G) {
-        // for (int l = 0; l < loop; l++) {
-        // int start_vertice = rand.nextInt(g.order);
-        // HashSet<Integer> targetVertices = g.getTargetVertices(delta, start_vertice);
-        // Graph inducedGraph = g.generateInducedGraph(targetVertices);
-        // inducedGraph.writeGraph2Gfu(p_bw);
-        // code = impl.computeCode(inducedGraph, 0, delta);
-        // print(code);
-        // root.addPath(code, g.id, false, 0);
-        // }
-        // }
-        // } catch (IOException e) {
-        // System.out.println(e);
-        // System.exit(0);
-        // }
 
-        for (Graph g : G) {
-            for (int l = 0; l < loop; l++) {
+        // try (BufferedWriter p_bw = Files.newBufferedWriter(p)) {
+
+        int[] total5 = new int[63];
+        for (int a = 0; a < 63; a++) {
+            total5[a] = 0;
+        }
+
+        int[] aids = { 3, 1, 22, 7, 0 };
+        int[] imdb = { 5, 8, 4, 1, 2 };
+        int[] pcms = { 10, 11, 6, 16, 17 };
+
+        int method = 2;// 0: 始点を等価性が高いものに 1: ランダムに部分グラフを取得後始点を等価性の高いもの 2: ランダムにコード生成
+
+        if (method == 0) {
+
+            for (Graph g : G) {
+                boolean equifrag = false;
                 int start_vertice = rand.nextInt(g.order);
-                HashSet<Integer> targetVertices = g.getTargetVertices(delta, start_vertice);
-                Graph inducedGraph = g.generateInducedGraph(targetVertices);
-                start_vertice = rand.nextInt(inducedGraph.order);
-                code = impl.computeCanonicalCode(inducedGraph, start_vertice, delta);
-                // print(code);
-                root.addPath(code, g.id, false, 0);
+                for (int l = 0; l < loop; l++) {
+                    for (int an : aids) {
+                        for (int v = 0; v < g.order; ++v) {
+                            if (g.vertices[v] == an) {
+                                start_vertice = v;
+                                equifrag = true;
+                                break;
+                            }
+                        }
+                        if (equifrag)
+                            break;
+                    }
+
+                    HashSet<Integer> targetVertices = g.getTargetVertices(delta, start_vertice);
+                    Graph inducedGraph = g.generateInducedGraph(targetVertices);
+                    start_vertice = rand.nextInt(inducedGraph.order);
+
+                    equifrag = false;
+                    for (int an : aids) {
+                        for (int v = 0; v < inducedGraph.order; ++v) {
+                            if (inducedGraph.vertices[v] == an) {
+                                start_vertice = v;
+                                equifrag = true;
+                                break;
+                            }
+                        }
+                        if (equifrag)
+                            break;
+                    }
+                    code = impl.computeCanonicalCode(inducedGraph, start_vertice, delta);
+                    String s = code.get(0).toString();
+                    byte a = codetree.common.VertexLabel.string2id(s);
+                    total5[a]++;
+                    // print(code);
+                    root.addPath(code, g.id, false, 0);
+                }
             }
+        } else if (method == 1) {
+
+            // 等価性の高い頂点に絞ってそこからランダムにコード生成
+            for (Graph g : G) {
+                boolean equifrag = false;
+                int start_vertice = rand.nextInt(g.order);
+                for (int l = 0; l < loop; l++) {
+                    for (int an : pcms) {
+                        for (int v = 0; v < g.order; ++v) {
+                            if (g.vertices[v] == an) {
+                                start_vertice = v;
+                                equifrag = true;
+                                break;
+                            }
+                        }
+                        if (equifrag)
+                            break;
+                    }
+
+                    HashSet<Integer> targetVertices = g.getTargetVertices(delta, start_vertice);
+                    Graph inducedGraph = g.generateInducedGraph(targetVertices);
+                    start_vertice = rand.nextInt(inducedGraph.order);
+                    code = impl.computeCanonicalCode(inducedGraph, start_vertice, delta);
+                    // print(code);
+                    root.addPath(code, g.id, false, 0);
+                }
+            }
+        } else if (method == 2) {
+
+            for (Graph g : G) {
+                for (int l = 0; l < loop; l++) {
+                    int start_vertice = rand.nextInt(g.order);
+                    HashSet<Integer> targetVertices = g.getTargetVertices(delta, start_vertice);
+                    Graph inducedGraph = g.generateInducedGraph(targetVertices);
+                    start_vertice = rand.nextInt(inducedGraph.order);
+                    code = impl.computeCanonicalCode(inducedGraph, start_vertice, delta);
+                    String s = code.get(0).toString();
+                    byte a = codetree.common.VertexLabel.string2id(s);
+                    total5[a]++;
+                    // print(code);
+                    root.addPath(code, g.id, false, 0);
+                }
+            }
+        }
+
+        // どの頂点ラベルが先頭になったか
+        for (int a = 0; a < 63; a++) {
+            System.out.println("first fragment " + a + " : " + total5[a]);
         }
 
         List<ArrayList<CodeFragment>> codelist = impl.computeCanonicalCode(Graph.numOflabels(G));
@@ -136,7 +216,8 @@ public class CodeTree implements Serializable {
 
         bw.write("Tree size(new): " + treesize + "\n");
         index.write(
-                treesize + "," + String.format("%.6f", (double) (System.nanoTime() - time) / 1000 / 1000 / 1000) + ",");
+                treesize + "," + String.format("%.6f", (double) (System.nanoTime() - time) / 1000 / 1000 / 1000)
+                        + ",");
 
         System.out.println(
                 "remove node time(s) :"
@@ -147,8 +228,9 @@ public class CodeTree implements Serializable {
         root.addInfo();
         // root.sortVlabelRootChildren();
         inclusionCheck(impl, G);
-        bw.write("addIDtoTree(s): " + String.format("%.3f", (double) (System.nanoTime() - time) / 1000 / 1000 / 1000)
-                + "\n");
+        bw.write(
+                "addIDtoTree(s): " + String.format("%.3f", (double) (System.nanoTime() - time) / 1000 / 1000 / 1000)
+                        + "\n");
         System.out.println("\naddIDtoTree(s): " + (double) (System.nanoTime() - time) / 1000 /
                 1000 / 1000);
         index.write(String.format("%.3f", (double) (System.nanoTime() - time) / 1000

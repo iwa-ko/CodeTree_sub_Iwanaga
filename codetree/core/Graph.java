@@ -713,7 +713,6 @@ public class Graph implements Serializable {
         return equivalenceclass;
     }
 
-    
     private BitSet startVertexcheck() {
         BitSet startVertexBit = new BitSet(order);
 
@@ -726,17 +725,18 @@ public class Graph implements Serializable {
 
     public BitSet changestartVerBitSet(int v) {
         int a = vector[v];
-        if (a != 0 && a != -1) {
+        if (a > 0) {// a != 0 && a != -1
             startvertexBit.set(v, false);
-            startvertexBit.set(a, true);
+            startvertexBit.set(vector[v], true);
         }
         return startvertexBit;
     }
+
     public BitSet backstartVerBitSet(int v) {
         int a = vector[v];
-        if (a != 0 && a != -1) {
+        if (a > 0) {
             startvertexBit.set(v, true);
-            startvertexBit.set(a, false);
+            startvertexBit.set(vector[v], false);
         }
         return startvertexBit;
     }
@@ -751,7 +751,7 @@ public class Graph implements Serializable {
             memoindex = equivalenceBit.nextSetBit(0);
             int max = equivalenceBit.cardinality();
             // startID.add(memoindex);
-            for (int trueIndex = equivalenceBit.nextSetBit(1+memoindex); trueIndex != -1; trueIndex = equivalenceBit
+            for (int trueIndex = equivalenceBit.nextSetBit(1 + memoindex); trueIndex != -1; trueIndex = equivalenceBit
                     .nextSetBit(++trueIndex)) {
 
                 vector[memoindex] = trueIndex;

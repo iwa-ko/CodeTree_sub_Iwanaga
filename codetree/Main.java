@@ -54,6 +54,9 @@ class Main {
                     // System.out.println("無効なデータセットIDです");
                     // System.exit(0);
                     // }
+                    // if (datasetID == 4)
+                    // continue;
+
                     parseArgs(args);
 
                     List<ArrayList<Pair<Integer, Graph>>> Q = new ArrayList<>();
@@ -67,43 +70,168 @@ class Main {
                     System.out.println(dataset + " dataset load time:" + start_read / 1000 / 1000 + "ms");
 
                     double total = 0;
+                    int equicount = 0;
 
-                    for(Graph g : G){
-                        int count= 0;
-                        for(int i=0; i< g.order();i++){
-                            if(g.equivalenceclass.containsKey(i)){
-                                if(g.equivalenceclass.get(i).cardinality() > 1){
+                    for (Graph g : G) {
+                        Boolean equi = false;
+                        int count = 0;
+                        for (int i = 0; i < g.order(); i++) {
+                            if (g.equivalenceclass.containsKey(i)) {
+                                if (g.equivalenceclass.get(i).cardinality() > 1) {
                                     count++;
+                                    equi = true;
                                 }
                             }
                         }
+                        if (equi)
+                            equicount++;
                         total += count;
                     }
-                    System.out.println("equivalence:" + total/G.size());
+                    System.out.println("equicount : " + equicount);
+                    // for (Graph g : G) {
+                    // int count = 0;
+                    // for (int i = 0; i < g.order(); i++) {
+                    // if (g.equivalenceclass.containsKey(i)) {
+                    // if (g.equivalenceclass.get(i).cardinality() > 1 &&
+                    // g.edgeBitset.get(i).cardinality() == 1) {
+                    // count++;
+                    // }
+                    // }
+                    // }
+                    // total += count;
+                    // }
+                    System.out.println("equivalence paris in G:" + total / G.size());
 
-                    for (int numOfEdge = minedge; numOfEdge <= maxedge; numOfEdge *= 2) {
-                        ArrayList<Pair<Integer, Graph>> qset = new ArrayList<>();
-                        for (int i = 0; i < querysize; i++) {
-                            q_gfuFilename = String.format("Query/%s/randomwalk/%d/q%d.gfu", dataset,
-                                    numOfEdge, i);
-                            Graph q = SdfFileReader.readFileQuery_gfu(Paths.get(q_gfuFilename));
-                            qset.add(new Pair<Integer, Graph>(i, q));
+                    int[] allvertex = new int[63];
+                    for (int i = 0; i < 63; i++) {
+                        allvertex[i] = 0;
+                    }
+                    int equivalencevertex = 0;
+                    for (Graph g : G) {
+                        for (int i = 0; i < g.order(); i++) {
+                            allvertex[g.vertices[i]]++;
                         }
-                        // query_search(qset, numOfEdge, "R");
-                        Q.add(qset);
                     }
 
+                    // System.out.println("equivalence vertexlabel in G:");
+                    for (int a = 0; a < 63; a++) {
+                        System.out.println(a + " : " + allvertex[a]);
+                    }
+
+                    int equivalencevertexs = 0;
+                    for (Graph g : G) {
+                        for (int i = 0; i < g.order(); i++) {
+                            if (g.equivalenceclass.containsKey(i)) {
+                                if (g.equivalenceclass.get(i).cardinality() > 1) {
+                                    equivalencevertexs += g.equivalenceclass.get(i).cardinality();
+                                }
+                            }
+                        }
+                    }
+                    System.out.println("equivalencevertex : " + equivalencevertexs + "\n");
+
+                    // 等価性がある頂点をカウント
+                    int[] equivalence_allvertex = new int[63];
+                    for (int i = 0; i < 63; i++) {
+                        equivalence_allvertex[i] = 0;
+                    }
+                    for (Graph g : G) {
+                        for (int i = 0; i < g.order(); i++) {
+                            if (g.equivalenceclass.containsKey(i)) {
+                                if (g.equivalenceclass.get(i).cardinality() > 1) {
+                                    equivalence_allvertex[g.vertices[i]] += g.equivalenceclass.get(i).cardinality();
+                                }
+                            }
+                        }
+                    }
+                    System.out.println("equivalence vertexlabel in G:");
+                    for (int a = 0; a < 63; a++) {
+                        System.out.println(a + " : " + equivalence_allvertex[a]);
+                    }
+                    System.out.println("\n");
+
+                    // 葉になっている頂点ラベルをカウント
+                    // int[] leaf_allvertex = new int[63];
+                    // for (int i = 0; i < 63; i++) {
+                    // leaf_allvertex[i] = 0;
+                    // }
+                    // for (Graph g : G) {
+                    // for (int i = 0; i < g.order(); i++) {
+                    // if (g.edgeBitset.get(i).cardinality() == 1) {
+                    // leaf_allvertex[g.vertices[i]]++;
+                    // }
+                    // }
+                    // }
+                    // System.out.println("leaf vertexlabel in G:");
+                    // for (int a = 0; a < 63; a++) {
+                    // System.out.println(a + " : " + leaf_allvertex[a]);
+                    // }
+
+                    // for (int numOfEdge = minedge; numOfEdge <= maxedge; numOfEdge *= 2) {
+                    // ArrayList<Pair<Integer, Graph>> qset = new ArrayList<>();
+                    // for (int i = 0; i < querysize; i++) {
+                    // q_gfuFilename = String.format("Query/%s/randomwalk/%d/q%d.gfu", dataset,
+                    // numOfEdge, i);
+                    // Graph q = SdfFileReader.readFileQuery_gfu(Paths.get(q_gfuFilename));
+                    // qset.add(new Pair<Integer, Graph>(i, q));
+                    // }
+                    // // query_search(qset, numOfEdge, "R");
+                    // Q.add(qset);
+                    // }
+                    total = 0;
+                    int equicount22 = 0;
                     for (int numOfEdge = minedge; numOfEdge <= maxedge; numOfEdge *= 2) {
                         ArrayList<Pair<Integer, Graph>> qset = new ArrayList<>();
+                        int count = 0;
+                        for (int i = 0; i < querysize; i++) {
+                            q_gfuFilename = String.format("Query/%s/randomwalk/%d/q%d.gfu", dataset, numOfEdge,
+                                    i);
+                            Graph q = SdfFileReader.readFileQuery_gfu(Paths.get(q_gfuFilename));
+                            Boolean equi = false;
+                            for (int s = 0; s < q.order(); s++) {
+                                if (q.equivalenceclass.containsKey(s)) {
+                                    if (q.equivalenceclass.get(s).cardinality() > 1) {
+                                        equi = true;
+                                        count++;
+                                    }
+                                }
+                            }
+                            if (equi)
+                                equicount22++;
+                            qset.add(new Pair<Integer, Graph>(i, q));
+                        }
+                        total += count;
+                        System.out.println("random query" + numOfEdge + "equivalence pairs:" + total / querysize
+                                + "equicount" + equicount22);
+                        // query_search(qset, numOfEdge, "B");
+                        Q.add(qset);
+                        equicount22 = 0;
+                    }
+                    total = 0;
+                    for (int numOfEdge = minedge; numOfEdge <= maxedge; numOfEdge *= 2) {
+                        ArrayList<Pair<Integer, Graph>> qset = new ArrayList<>();
+                        int count = 0;
                         for (int i = 0; i < querysize; i++) {
                             q_gfuFilename = String.format("Query/%s/bfs/%d/q%d.gfu", dataset, numOfEdge,
                                     i);
                             Graph q = SdfFileReader.readFileQuery_gfu(Paths.get(q_gfuFilename));
+                            for (int s = 0; s < q.order(); s++) {
+                                if (q.equivalenceclass.containsKey(s)) {
+                                    if (q.equivalenceclass.get(s).cardinality() > 1) {
+                                        count++;
+                                    }
+                                }
+                            }
                             qset.add(new Pair<Integer, Graph>(i, q));
                         }
+                        total += count;
+                        System.out.println("bfs query" + numOfEdge + "equivalence pairs:" + total / querysize);
                         // query_search(qset, numOfEdge, "B");
                         Q.add(qset);
                     }
+
+                    // if (true)
+                    // continue;
 
                     System.out.println("G size: " + G.size());
 
@@ -148,8 +276,6 @@ class Main {
                             allfind.write(String.format("%.2f", (double) fileSize / 1024 / 1024) + "\n");
 
                             allfind.flush();
-                            // if (true)
-                            // continue;
 
                             HashMap<Integer, ArrayList<String>> gMaps = makeGmaps(gfuFilename);
 
