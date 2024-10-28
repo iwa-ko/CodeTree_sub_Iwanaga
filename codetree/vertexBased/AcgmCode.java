@@ -170,7 +170,7 @@ public class AcgmCode
         for (IndexNode m : root.children) {
             for (int v = 0; v < g.order; ++v) {// keyに割り当てられている頂点だけを確認するように変更
                 AcgmCodeFragment frag = (AcgmCodeFragment) m.frag;
-                if (g.vertices[v] == frag.vLabel && g.startvertexBit.get(v)) {// 頂点だけ注目すれば良い
+                if (g.vertices[v] == frag.vLabel && g.startvertexBit[v]) {// 頂点だけ注目すれば良い
                     // g.changestartVerBitSet(v);
                     // infoList.add(new Pair<IndexNode, SearchInfo>(m, new AcgmSearchInfo(g, v)));
                     infoList.add(new Pair<IndexNode, SearchInfo>(m, new AcgmSearchInfo(g, v)));
@@ -252,7 +252,7 @@ public class AcgmCode
         }
 
         for (int v = openBitSet.nextSetBit(0); v != -1; v = openBitSet.nextSetBit(++v)) {
-            if (!g.startvertexBit.get(v)) {
+            if (!g.startvertexBit[v]) {
                 continue;
             }
 

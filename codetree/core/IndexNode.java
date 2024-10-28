@@ -88,6 +88,7 @@ public class IndexNode implements Serializable {
     static ArrayList<IndexNode> removeNode = new ArrayList<>();
     static int traverse_cou = 0;
     static Set<IndexNode> initTraverseNecessity = new HashSet<>();
+    static int Can_edge = 0;
 
     IndexNode(IndexNode parent, CodeFragment frag, int dep, boolean supergraphSearchNode) {
         this.parent = parent;
@@ -317,7 +318,7 @@ public class IndexNode implements Serializable {
             throws IOException, InterruptedException {
 
         if (q.id == 0 && q.size == 4) {
-            System.out.println("\n辿った節点数" + traverse_cou);
+            System.out.println("\nコード木構築中辿った節点数" + traverse_cou);
             // System.out.println("backtrackNodeNum" + backtrackNodeNum);
             // System.out.println("backtrackNodeNum_leaf" + backtrackNodeNum_leaf);
             backtrackNodeNum = 0;
@@ -340,11 +341,21 @@ public class IndexNode implements Serializable {
 
         List<Pair<IndexNode, SearchInfo>> infoList = impl.beginSearchforsearch(q, this);
         if (delta >= q.order) {
-            traverse = true;
             for (Pair<IndexNode, SearchInfo> info : infoList) {
-                q.changestartVerBitSet(info.right.getVertexIDs()[0]);
-                info.left.doublesearch(q, info.right, impl, false, traversedNode);
-                q.backstartVerBitSet(info.right.getVertexIDs()[0]);
+                traverse = true;
+                int used_id = info.right.getVertexIDs()[0];
+                int next = q.vector[used_id];
+                if (next > 0) {// a != 0 && a != -1
+                    // q.changestartVerBitSet(used_id, next);
+                    q.startvertexBit[used_id] = false;
+                    q.startvertexBit[next] = true;
+                    info.left.doublesearch(q, info.right, impl, false, traversedNode);
+                    // q.backstartVerBitSet(used_id, next);
+                    q.startvertexBit[used_id] = true;
+                    q.startvertexBit[next] = false;
+                } else {
+                    info.left.doublesearch(q, info.right, impl, false, traversedNode);
+                }
                 if (!traverse)
                     break;
             }
@@ -358,13 +369,33 @@ public class IndexNode implements Serializable {
 
         } else {
             for (Pair<IndexNode, SearchInfo> info : infoList) {
-                info.left.subsearch(q, info.right, impl, traversedNode);
+                int used_id = info.right.getVertexIDs()[0];
+                int next = q.vector[used_id];
+                if (next > 0) {// a != 0 && a != -1
+                    // q.changestartVerBitSet(used_id, next);
+                    q.startvertexBit[used_id] = false;
+                    q.startvertexBit[next] = true;
+                    info.left.subsearch(q, info.right, impl, traversedNode);
+                    // q.backstartVerBitSet(used_id, next);
+                    q.startvertexBit[used_id] = true;
+                    q.startvertexBit[next] = false;
+                } else {
+                    info.left.subsearch(q, info.right, impl, traversedNode);
+                }
             }
             a_in_count = 0;
             initTraverseNecessity();
         }
 
         infoList = null;
+
+        // if(q.size == 64){
+        //     for (int i = Can.nextSetBit(0); i >= 0; i = Can.nextSetBit(i + 1)) {
+        //         if(G.get(i).size() >= 64) Can_edge++;
+        //     }
+        //     System.out.println(Can_edge);
+        // }
+        
 
         if (Can.cardinality() != 0) {
             verfyNum++;
@@ -494,47 +525,42 @@ public class IndexNode implements Serializable {
             nextFrags = impl.enumerateFollowableFragments(q, info, adjLabels, childEdgeFragOr);
         }
 
-        // List<Pair<CodeFragment, SearchInfo>> nextFrags =
-        // impl.enumerateFollowableFragments(q, info, adjLabels);
-
         for (IndexNode m : children) {
             for (Pair<CodeFragment, SearchInfo> frag : nextFrags) {
-                // if (m.frag.equals(frag.left)) {// super pattern
-                // int a = q.vector[frag.right.getVertexIDs()[depth]];
-                // if (a != 0 && a != -1) {
-                // q.changestartVerBitSet(frag.right.getVertexIDs()[depth]);
-                // m.doublesearch(q, frag.right, impl, superFrag, traversedNode);
-                // q.backstartVerBitSet(frag.right.getVertexIDs()[depth]);
-                // } else {
-                // m.doublesearch(q, frag.right, impl, superFrag, traversedNode);
-                // }
-                // if (!traverse)
-                // return;
-                // } else if (m.frag.bigger(frag.left)) {// super pattern p
-                // superFrag = true;
-                // int a = q.vector[frag.right.getVertexIDs()[depth]];
-                // if (a != 0 && a != -1) {
-                // q.changestartVerBitSet(frag.right.getVertexIDs()[depth]);
-                // m.doublesearch(q, frag.right, impl, superFrag, traversedNode);
-                // q.backstartVerBitSet(frag.right.getVertexIDs()[depth]);
-                // } else {
-                // m.doublesearch(q, frag.right, impl, superFrag, traversedNode);
-                // }
-                // if (!traverse)
-                // return;
-                // }
-
                 if (m.frag.equals(frag.left)) {// super pattern
-                    q.changestartVerBitSet(frag.right.getVertexIDs()[depth]);
-                    m.doublesearch(q, frag.right, impl, superFrag, traversedNode);
-                    q.backstartVerBitSet(frag.right.getVertexIDs()[depth]);
+                    int used_id = frag.right.getVertexIDs()[depth];
+                    int next = q.vector[used_id];
+                    if (next > 0) {
+                        // q.changestartVerBitSet(used_id, next);
+                        q.startvertexBit[used_id] = false;
+                        q.startvertexBit[next] = true;
+                        m.doublesearch(q, frag.right, impl, superFrag, traversedNode);
+                        // q.backstartVerBitSet(used_id, next);
+                        q.startvertexBit[used_id] = true;
+                        q.startvertexBit[next] = false;
+
+                    } else {
+                        m.doublesearch(q, frag.right, impl, superFrag, traversedNode);
+                    }
                     if (!traverse)
                         return;
                 } else if (m.frag.bigger(frag.left)) {// super pattern p
-                    superFrag = true;
-                    q.changestartVerBitSet(frag.right.getVertexIDs()[depth]);
-                    m.doublesearch(q, frag.right, impl, superFrag, traversedNode);
-                    q.backstartVerBitSet(frag.right.getVertexIDs()[depth]);
+                    int used_id = frag.right.getVertexIDs()[depth];
+                    int next = q.vector[used_id];
+                    if (next > 0) {
+                        superFrag = true;
+                        // q.changestartVerBitSet(used_id, next);
+                        q.startvertexBit[used_id] = false;
+                        q.startvertexBit[next] = true;
+                        m.doublesearch(q, frag.right, impl, superFrag, traversedNode);
+                        // q.backstartVerBitSet(used_id, next);
+                        q.startvertexBit[used_id] = true;
+                        q.startvertexBit[next] = false;
+
+                    } else {
+                        superFrag = true;
+                        m.doublesearch(q, frag.right, impl, superFrag, traversedNode);
+                    }
                     if (!traverse)
                         return;
                 }
@@ -578,18 +604,18 @@ public class IndexNode implements Serializable {
                 if (!m.traverseNecessity)
                     break;
                 if (frag.left.equals(m.frag)) {
-                    // int a = q.vector[frag.right.getVertexIDs()[depth]];
-                    // if (a != 0 && a != -1) {
-                    // q.changestartVerBitSet(frag.right.getVertexIDs()[depth]);
-                    // m.subsearch(q, frag.right, impl, traversedNode);
-                    // q.backstartVerBitSet(frag.right.getVertexIDs()[depth]);
-                    // } else {
-                    // m.subsearch(q, frag.right, impl, traversedNode);
-                    // }
-                    if (frag.left.equals(m.frag)) {
-                        q.changestartVerBitSet(frag.right.getVertexIDs()[depth]);
+                    int used_id = frag.right.getVertexIDs()[depth];
+                    int next = q.vector[used_id];
+                    if (next > 0) {
+                        // q.changestartVerBitSet(used_id, next);
+                        q.startvertexBit[used_id] = false;
+                        q.startvertexBit[next] = true;
                         m.subsearch(q, frag.right, impl, traversedNode);
-                        q.backstartVerBitSet(frag.right.getVertexIDs()[depth]);
+                        // q.backstartVerBitSet(used_id, next);
+                        q.startvertexBit[used_id] = true;
+                        q.startvertexBit[next] = false;
+                    } else {
+                        m.subsearch(q, frag.right, impl, traversedNode);
                     }
                 }
             }
@@ -635,21 +661,24 @@ public class IndexNode implements Serializable {
         List<Pair<IndexNode, SearchInfo>> infoList = impl.beginSearch(g, this);
         // tt += System.nanoTime() - t;
         for (Pair<IndexNode, SearchInfo> info : infoList) {
-            // ここも直す
-            // int a = g.vector[info.right.getVertexIDs()[depth]];
-            // if (a != 0 && a != -1) {
-            // g.changestartVerBitSet(info.right.getVertexIDs()[depth]);
-            // info.left.addIDtoTree(g, info.right, impl);
-            // g.backstartVerBitSet(info.right.getVertexIDs()[depth]);
-            // } else {
-            // info.left.addIDtoTree(g, info.right, impl);
-            // }
-            info.left.addIDtoTree(g, info.right, impl);
+            int used_id = info.right.getVertexIDs()[depth];
+            int next = g.vector[used_id];
+            if (next > 0) {
+                // g.changestartVerBitSet(used_id, next);
+                g.startvertexBit[used_id] = false;
+                g.startvertexBit[next] = true;
+                info.left.addIDtoTree(g, info.right, impl);
+                // g.backstartVerBitSet(used_id, next);
+                g.startvertexBit[used_id] = true;
+                g.startvertexBit[next] = false;
+            } else {
+                info.left.addIDtoTree(g, info.right, impl);
+            }
         }
     }
 
     private void addIDtoTree(Graph g, SearchInfo info, GraphCode impl) {
-        // traverse_cou++;
+        traverse_cou++;
         if (depth == 1) {
             if (labelFiltering.get(g.id) == null) {
                 labelFiltering.put(g.id, new BitSet(g.order));
@@ -679,17 +708,19 @@ public class IndexNode implements Serializable {
                 if (!m.traverseNecessity)
                     break;
                 if (frag.left.contains(m.frag)) {
-                    // int a = g.vector[frag.right.getVertexIDs()[depth]];
-                    // if (a != 0 && a != -1) {
-                    // g.changestartVerBitSet(frag.right.getVertexIDs()[depth]);
-                    // m.addIDtoTree(g, frag.right, impl);
-                    // g.backstartVerBitSet(frag.right.getVertexIDs()[depth]);
-                    // } else {
-                    // m.addIDtoTree(g, frag.right, impl);
-                    // }
-                    g.changestartVerBitSet(frag.right.getVertexIDs()[depth]);
-                    m.addIDtoTree(g, frag.right, impl);
-                    g.backstartVerBitSet(frag.right.getVertexIDs()[depth]);
+                    int used_id = frag.right.getVertexIDs()[depth];
+                    int next = g.vector[used_id];
+                    if (next > 0) {
+                        // g.changestartVerBitSet(used_id, next);
+                        g.startvertexBit[used_id] = false;
+                        g.startvertexBit[next] = true;
+                        m.addIDtoTree(g, frag.right, impl);
+                        // g.backstartVerBitSet(used_id, next);
+                        g.startvertexBit[used_id] = true;
+                        g.startvertexBit[next] = false;
+                    } else {
+                        m.addIDtoTree(g, frag.right, impl);
+                    }
                 }
             }
         }

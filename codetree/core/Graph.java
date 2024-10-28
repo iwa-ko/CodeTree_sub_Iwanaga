@@ -16,7 +16,7 @@ public class Graph implements Serializable {
     public int order;
     public BitSet filterFlag;
     public HashMap<Integer, BitSet> edgeBitset;
-    public BitSet startvertexBit;
+    public boolean[] startvertexBit;
     public HashMap<Integer, BitSet> equivalenceclass;
 
     static Random rand;
@@ -713,38 +713,33 @@ public class Graph implements Serializable {
         return equivalenceclass;
     }
 
-    private BitSet startVertexcheck() {
-        BitSet startVertexBit = new BitSet(order);
+    private boolean[] startVertexcheck() {
+        boolean[] startVertexBit = new boolean[order];
 
         for (Integer a : this.equivalenceclass.keySet()) {
-            startVertexBit.set(a);
+            startVertexBit[a] = true;
         }
 
         return startVertexBit;
     }
 
-    public BitSet changestartVerBitSet(int v) {
-        int a = vector[v];
-        if (a > 0) {// a != 0 && a != -1
-            startvertexBit.set(v, false);
-            startvertexBit.set(vector[v], true);
-        }
-        return startvertexBit;
-    }
+    // public void changestartVerBitSet(int v, int next) {
+    //     startvertexBit[v] = false;
+    //     startvertexBit[next] = true;
+    //     // return startvertexBit;
+    // }
 
-    public BitSet backstartVerBitSet(int v) {
-        int a = vector[v];
-        if (a > 0) {
-            startvertexBit.set(v, true);
-            startvertexBit.set(vector[v], false);
-        }
-        return startvertexBit;
-    }
+    // public void backstartVerBitSet(int v, int next) {
+    //     startvertexBit[v] = true;
+    //     startvertexBit[next] = false;
+    //     // return startvertexBit;
+    // }
 
     private int[] addvector() {
         int[] vector = new int[order];
         int memoindex = -1;
         // ArrayList<Integer> startID = new ArrayList<>();//矢印の開始の頂点ID保持
+        
 
         for (BitSet equivalenceBit : equivalenceclass.values()) {
             int count = 0;
@@ -763,7 +758,6 @@ public class Graph implements Serializable {
                 }
             }
         }
-
         return vector;
     }
 

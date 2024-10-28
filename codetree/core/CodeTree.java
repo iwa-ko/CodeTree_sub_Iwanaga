@@ -82,7 +82,7 @@ public class CodeTree implements Serializable {
         int[] imdb = { 5, 8, 4, 1, 2 };
         int[] pcms = { 10, 11, 6, 16, 17 };
 
-        int method = 2;// 0: 始点を等価性が高いものに 1: ランダムに部分グラフを取得後始点を等価性の高いもの 2: ランダムにコード生成
+        int method = 2;// 0: 始点を等価性が高いものに 1: 等価性が高い頂点を含んだ部分グラフを取得後,ランダムにコード生成 2: ランダムにコード生成
 
         if (method == 0) {
 
@@ -133,7 +133,7 @@ public class CodeTree implements Serializable {
                 boolean equifrag = false;
                 int start_vertice = rand.nextInt(g.order);
                 for (int l = 0; l < loop; l++) {
-                    for (int an : pcms) {
+                    for (int an : aids) {
                         for (int v = 0; v < g.order; ++v) {
                             if (g.vertices[v] == an) {
                                 start_vertice = v;
@@ -154,7 +154,6 @@ public class CodeTree implements Serializable {
                 }
             }
         } else if (method == 2) {
-
             for (Graph g : G) {
                 for (int l = 0; l < loop; l++) {
                     int start_vertice = rand.nextInt(g.order);
